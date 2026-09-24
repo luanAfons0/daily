@@ -3,6 +3,10 @@
  * Status and no Cycle.
  */
 import { strict as assert } from 'node:assert';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import { startedAndShaken, structureOf, type Note } from './helpers/plugin.ts';
 
@@ -117,4 +121,80 @@ test('Notes survive a restart', async (t) => {
   const listed = structureOf<Notes>(await second.call('list_notes'));
 
   assert.deepEqual(listed.notes, [note]);
+});
+
+test('create_note keeps the title given, apart from the body', async (t) => {
+  const plugin = await startedAndShaken(t);
+
+  const note = structureOf<Note>(
+    await plugin.call('create_note', { title: 'Pontos abertos', body: '- Fila a parte' }),
+  );
+
+  assert.equal(note.title, 'Pontos abertos');
+  assert.equal(note.body, '- Fila a parte');
+});
+
+test('a Note needs no title: one kept without has an empty one', async (t) => {
+  const plugin = await startedAndShaken(t);
+
+  const note = structureOf<Note>(await plugin.call('create_note', { body: 'untitled' }));
+
+  assert.equal(note.title, '');
+});
+
+test('update_note changes the title when given one, and keeps it when not', async (t) => {
+  const plugin = await startedAndShaken(t);
+  const note = structureOf<Note>(
+    await plugin.call('create_note', { title: 'Before', body: 'text' }),
+  );
+
+  const retitled = structureOf<Note>(
+    await plugin.call('update_note', { id: note.id, title: 'After', body: 'text' }),
+  );
+  const kept = structureOf<Note>(
+    await plugin.call('update_note', { id: note.id, body: 'new text' }),
+  );
+
+  assert.equal(retitled.title, 'After');
+  assert.equal(kept.title, 'After');
+  assert.equal(kept.body, 'new text');
+});
+
+test('a title that is not text is refused in one sentence that names it', async (t) => {
+  const plugin = await startedAndShaken(t);
+
+  const answer = await plugin.call('create_note', { title: 7, body: 'text' });
+
+  assert.equal(answer.error?.code, -32602);
+  assert.match(answer.error?.message ?? '', /create_note needs "title"/);
+});
+
+test('a daily.db from before titles moves up, and its Notes come out untitled', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'daily-v1-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const old = new DatabaseSync(join(directory, 'daily.db'));
+  old.exec(`
+    CREATE TABLE cycles (id INTEGER PRIMARY KEY, started_at TEXT NOT NULL);
+    CREATE TABLE entries (
+      id INTEGER PRIMARY KEY, cycle_id INTEGER NOT NULL REFERENCES cycles (id),
+      title TEXT NOT NULL, body TEXT,
+      status TEXT NOT NULL CHECK (status IN ('Todo', 'In Progress', 'Done')),
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
+    CREATE TABLE notes (
+      id INTEGER PRIMARY KEY, body TEXT NOT NULL,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
+    INSERT INTO notes (body, created_at, updated_at)
+      VALUES ('kept before titles', '2026-09-01T10:00:00.000Z', '2026-09-01T10:00:00.000Z');
+    PRAGMA user_version = 1;
+  `);
+  old.close();
+
+  const plugin = await startedAndShaken(t, { directory });
+  const listed = structureOf<Notes>(await plugin.call('list_notes'));
+
+  assert.equal(listed.notes.length, 1);
+  assert.equal(listed.notes[0]?.title, '');
+  assert.equal(listed.notes[0]?.body, 'kept before titles');
 });

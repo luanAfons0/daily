@@ -249,6 +249,8 @@ export type CycleView = {
 /** One Note, as the tools answer it. */
 export type Note = {
   readonly id: number;
+  /** A short name for the Note; empty when it has none. */
+  readonly title: string;
   readonly body: string;
   readonly createdAt: string;
   readonly updatedAt: string;

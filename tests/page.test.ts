@@ -130,3 +130,11 @@ test('the Page claims nothing about Entries or Notes before it has asked', async
     'the served markup already says something is empty, which it cannot know before it asks',
   );
 });
+
+test('the Page asks before a delete in its own dialog, never in the browser confirm box', async () => {
+  const html = await readFile(join(WEB, 'index.html'), 'utf8');
+  const code = await readFile(join(WEB, 'app.js'), 'utf8');
+
+  assert.ok(!/\bconfirm\(/.test(code), 'app.js still opens the browser confirm box');
+  assert.match(html, /<dialog[^>]*id="confirm-dialog"/);
+});

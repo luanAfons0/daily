@@ -20,6 +20,8 @@ Then open the Index Page, find `daily`, and open its Plugin Page.
 
 The Plugin Page has three tabs: **Cycle**, **Earlier Cycles** and **Notes**.
 The keys 1, 2 and 3 choose one, and N starts a new Entry.
+Drag an Entry to another column to give it that Status. In a Note, Shift+Enter
+saves it.
 
 It needs Node 24 or newer, for TypeScript with no build step and for
 `node:sqlite`. The Host's service `PATH` often has only an older Node, so `mcp`
@@ -78,8 +80,8 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | `delete_entry` | `id`                                        | the Entry that is gone           |
 | `meeting_markdown` | none                                    | the Markdown, and `{ markdown, done, workingOn }` |
 | `list_notes`   | none                                        | `{ notes }`, newest first        |
-| `create_note`  | `body`                                      | the new Note                     |
-| `update_note`  | `id`, `body`                                | the Note as it now is            |
+| `create_note`  | `body`, `title` (optional)                  | the new Note                     |
+| `update_note`  | `id`, `body`, `title` (optional)            | the Note as it now is            |
 | `delete_note`  | `id`                                        | the Note that is gone            |
 
 `start_cycle` is the tool a Scheduler Job calls at every Meeting, under a

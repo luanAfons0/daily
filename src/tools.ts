@@ -30,6 +30,7 @@ import { meetingMarkdown } from './meeting.ts';
 import {
   checkNoteBody,
   checkNoteId,
+  checkNoteTitle,
   createNote,
   deleteNote,
   listNotes,
@@ -41,6 +42,10 @@ import { within, type Store } from './store.ts';
 const TITLE = { type: 'string', description: 'One line that says what the Entry is.' };
 const BODY = { type: 'string', description: 'Details, as Markdown. Optional.' };
 const ID = { type: 'integer', description: 'The id of the Entry, from get_cycle.' };
+const NOTE_TITLE = {
+  type: 'string',
+  description: 'A short name for the Note, apart from its text. Optional.',
+};
 const NOTE_ID = { type: 'integer', description: 'The id of the Note, from list_notes.' };
 const NOTE_BODY = { type: 'string', description: 'The text of the Note, as Markdown.' };
 const STATUS = { type: 'string', enum: STATUSES, description: 'Where the Entry stands.' };
@@ -154,25 +159,31 @@ export function toolsFor(store: Store): readonly Tool[] {
     {
       name: 'create_note',
       description: 'Keep one Note: free Markdown text that no Cycle ever moves.',
-      inputSchema: { type: 'object', properties: { body: NOTE_BODY }, required: ['body'] },
+      inputSchema: {
+        type: 'object',
+        properties: { title: NOTE_TITLE, body: NOTE_BODY },
+        required: ['body'],
+      },
       call: (given) => {
+        const title = checkNoteTitle('create_note', given['title']) ?? '';
         const body = checkNoteBody('create_note', given['body']);
-        return told(within(store, () => createNote(store, body)));
+        return told(within(store, () => createNote(store, title, body)));
       },
     },
 
     {
       name: 'update_note',
-      description: 'Give one Note a new body.',
+      description: 'Give one Note a new body, and a new title when one is given.',
       inputSchema: {
         type: 'object',
-        properties: { id: NOTE_ID, body: NOTE_BODY },
+        properties: { id: NOTE_ID, title: NOTE_TITLE, body: NOTE_BODY },
         required: ['id', 'body'],
       },
       call: (given) => {
         const id = checkNoteId('update_note', given['id']);
+        const title = checkNoteTitle('update_note', given['title']);
         const body = checkNoteBody('update_note', given['body']);
-        return told(within(store, () => updateNote(store, id, body)));
+        return told(within(store, () => updateNote(store, id, title, body)));
       },
     },
 
