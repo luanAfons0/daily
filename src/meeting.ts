@@ -1,5 +1,6 @@
 /**
- * The Markdown for the Meeting: what is Done, and what is being worked on.
+ * The Markdown for the Meeting: what is Done, what waits In Review, and what
+ * is being worked on. In review is said only when something is waiting.
  *
  * It answers the two questions of the Meeting and nothing more, so it lists
  * titles, not bodies. It is read after the Meeting's `start_cycle` has run, so
@@ -15,6 +16,7 @@ import type { Store } from './store.ts';
 export type MeetingMarkdown = {
   readonly markdown: string;
   readonly done: readonly number[];
+  readonly inReview: readonly number[];
   readonly workingOn: readonly number[];
 };
 
@@ -30,6 +32,7 @@ export function meetingMarkdown(store: Store): MeetingMarkdown {
     ...(before === undefined ? [] : entriesIn(store, before.id)),
     ...now,
   ].filter((entry) => entry.status === 'Done');
+  const inReview = now.filter((entry) => entry.status === 'In Review');
   const workingOn = [
     ...now.filter((entry) => entry.status === 'In Progress'),
     ...now.filter((entry) => entry.status === 'Todo'),
@@ -40,12 +43,20 @@ export function meetingMarkdown(store: Store): MeetingMarkdown {
     '',
     ...listed(done),
     '',
+    // Said only when there is something waiting, so a team that never uses
+    // In Review hears the Meeting it always heard.
+    ...(inReview.length === 0 ? [] : ['## In review', '', ...listed(inReview), '']),
     '## Working on',
     '',
     ...listed(workingOn),
     '',
   ].join('\n');
-  return { markdown, done: done.map(idOf), workingOn: workingOn.map(idOf) };
+  return {
+    markdown,
+    done: done.map(idOf),
+    inReview: inReview.map(idOf),
+    workingOn: workingOn.map(idOf),
+  };
 }
 
 /** One bullet per Entry, or one that says there is none. */

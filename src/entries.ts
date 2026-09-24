@@ -10,9 +10,9 @@ import { badInput } from './mcp.ts';
 import { now, type Store } from './store.ts';
 
 /** Where an Entry stands. Nothing else. */
-export const STATUSES = ['Todo', 'In Progress', 'Done'] as const;
+export const STATUSES = ['Todo', 'In Progress', 'In Review', 'Done'] as const;
 
-/** One of the three Statuses. */
+/** One of the four Statuses. */
 export type Status = (typeof STATUSES)[number];
 
 /** One Entry, as a caller sees it. */
@@ -104,7 +104,7 @@ export type EntryChange = {
  * one call away from being put right.
  *
  * An Entry that is not `Done` is always in the current Cycle. So a `Done`
- * Entry in an earlier Cycle that is set back to `Todo` or `In Progress` moves
+ * Entry in an earlier Cycle that is set back to any other Status moves
  * into the current Cycle in this same write; the caller holds the transaction.
  * An Entry given a new Status goes to the end of its new column.
  */
@@ -211,7 +211,7 @@ export function checkStatus(tool: string, given: unknown): Status {
     return given as Status;
   }
   throw badInput(
-    `${tool} needs "status" as one of "Todo", "In Progress" or "Done", ` +
+    `${tool} needs "status" as one of "Todo", "In Progress", "In Review" or "Done", ` +
       `and was given ${JSON.stringify(given) ?? 'nothing'}.`,
   );
 }

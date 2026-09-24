@@ -27,7 +27,7 @@ function say(text) {
 }
 
 /** The ring before the title wears the Status chosen, as the board does. */
-const RINGS = { Todo: 'todo', 'In Progress': 'doing', Done: 'done' };
+const RINGS = { Todo: 'todo', 'In Progress': 'doing', 'In Review': 'review', Done: 'done' };
 
 function ring() {
   byId('q-ring').className = 'ring ' + RINGS[status()];

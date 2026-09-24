@@ -16,7 +16,12 @@ type Summary = {
   readonly id: number;
   readonly startedAt: string;
   readonly current: boolean;
-  readonly counts: { readonly Todo: number; readonly 'In Progress': number; readonly Done: number };
+  readonly counts: {
+    readonly Todo: number;
+    readonly 'In Progress': number;
+    readonly 'In Review': number;
+    readonly Done: number;
+  };
 };
 type Cycles = { readonly cycles: readonly Summary[] };
 type StartedCycle = { readonly cycle: { readonly id: number } };
@@ -45,9 +50,9 @@ test('list_cycles is every Cycle, newest first, with its Entries counted by Stat
   assert.deepEqual(
     cycles.map((cycle) => [cycle.id, cycle.current, cycle.counts]),
     [
-      [third, true, { Todo: 1, 'In Progress': 1, Done: 1 }],
-      [second, false, { Todo: 0, 'In Progress': 0, Done: 0 }],
-      [first, false, { Todo: 0, 'In Progress': 0, Done: 2 }],
+      [third, true, { Todo: 1, 'In Progress': 1, 'In Review': 0, Done: 1 }],
+      [second, false, { Todo: 0, 'In Progress': 0, 'In Review': 0, Done: 0 }],
+      [first, false, { Todo: 0, 'In Progress': 0, 'In Review': 0, Done: 2 }],
     ],
   );
   for (const cycle of cycles) assert.ok(!Number.isNaN(Date.parse(cycle.startedAt)));

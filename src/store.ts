@@ -54,6 +54,26 @@ const STEPS: readonly string[] = [
   ALTER TABLE entries ADD COLUMN position INTEGER NOT NULL DEFAULT 0;
   UPDATE entries SET position = id;
   `,
+  // In Review is a fourth Status. SQLite cannot change a CHECK in place, so
+  // the table is built again with the new one and every row copied across,
+  // ids, places and all. Nothing refers to an Entry, so nothing else moves.
+  `
+  CREATE TABLE entries_next (
+    id INTEGER PRIMARY KEY,
+    cycle_id INTEGER NOT NULL REFERENCES cycles (id),
+    title TEXT NOT NULL,
+    body TEXT,
+    status TEXT NOT NULL CHECK (status IN ('Todo', 'In Progress', 'In Review', 'Done')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0
+  );
+  INSERT INTO entries_next (id, cycle_id, title, body, status, created_at, updated_at, position)
+    SELECT id, cycle_id, title, body, status, created_at, updated_at, position FROM entries;
+  DROP TABLE entries;
+  ALTER TABLE entries_next RENAME TO entries;
+  CREATE INDEX entries_by_cycle ON entries (cycle_id);
+  `,
 ];
 
 /** Open `daily.db`, and bring it up to the current version. */

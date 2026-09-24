@@ -7,6 +7,7 @@
    is kept for one job, the Status of an Entry: slate for Todo, signal amber
    for In Progress, sea green for Done. Every colour is a token on :root and
    is redefined once for dark, so a rule below names a role and never a hex.
+   In Review, between In Progress and Done, is violet.
 
    The faces are the ones Windows already has, because the FirstMate window
    runs there: Bahnschrift for the log's headings and times, Segoe UI for the
@@ -32,6 +33,7 @@
 
   --todo: #7a8896;
   --doing: #c98300;
+  --review: #6b4fc0;
   --done: #1d8763;
 
   --display: Bahnschrift, 'DIN Alternate', 'Roboto Condensed', 'Arial Narrow',
@@ -63,6 +65,7 @@
 
     --todo: #8594a2;
     --doing: #eea93a;
+    --review: #a893f0;
     --done: #4cc495;
   }
 }
@@ -104,7 +107,7 @@ code, pre { font-family: var(--mono); font-size: 0.88em; }
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px 32px;
-  width: min(1072px, 100% - 48px);
+  width: min(1392px, 100% - 48px);
   margin: 0 auto;
   padding-top: 18px;
   border-bottom: 1px solid var(--line);
@@ -174,7 +177,7 @@ code, pre { font-family: var(--mono); font-size: 0.88em; }
 /* --- the page and its sections ------------------------------------------ */
 
 .page {
-  max-width: 1120px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 8px 24px 72px;
 }
@@ -342,7 +345,10 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 /* The one step forward for an Entry, in the colour of where it goes. */
 .act.step { border-color: var(--doing); color: var(--ink); font-weight: 600; }
 
-.entry.doing .act.step { border-color: var(--done); }
+.entry.doing .act.step { border-color: var(--review); }
+
+.entry.review .act.step { border-color: var(--done); }
+
 
 /* --- the Status of an Entry --------------------------------------------- */
 
@@ -357,6 +363,8 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 }
 
 .dot.doing { background: var(--doing); }
+
+.dot.review { background: var(--review); }
 
 .dot.done { background: var(--done); }
 
@@ -439,7 +447,7 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 
 .board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   /* Every column is as tall as the longest, so an Entry can be dropped
      anywhere below the last card of a short one. */
@@ -462,6 +470,8 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 }
 
 .column.doing .column-hd { border-bottom-color: var(--doing); }
+
+.column.review .column-hd { border-bottom-color: var(--review); }
 
 .column.done .column-hd { border-bottom-color: var(--done); }
 
@@ -495,6 +505,8 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 
 .column.doing.drop { background: color-mix(in srgb, var(--doing) 12%, transparent); }
 
+.column.review.drop { background: color-mix(in srgb, var(--review) 12%, transparent); }
+
 .column.done.drop { background: color-mix(in srgb, var(--done) 12%, transparent); }
 
 .column-empty { margin: 0; padding: 6px 2px; color: var(--faint); font-size: 13px; }
@@ -506,6 +518,8 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 }
 
 .entry.doing { border-left-color: var(--doing); }
+
+.entry.review { border-left-color: var(--review); }
 
 .entry.done { border-left-color: var(--done); }
 
@@ -756,6 +770,8 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 
 .mark-tick.doing { background: var(--doing); }
 
+.mark-tick.review { background: var(--review); }
+
 .mark-tick.done { background: var(--done); }
 
 .mark-tick:hover { opacity: 0.8; }
@@ -923,6 +939,10 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 
 .md hr { border: none; border-top: 1px solid var(--line); }
 
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 760px) {
   .bar { width: calc(100% - 32px); padding-top: 14px; }
   .page { padding: 4px 16px 56px; }
@@ -1061,6 +1081,13 @@ body.popup { background: var(--surface); }
 .ring.doing {
   border-color: var(--doing);
   background: conic-gradient(var(--doing) 0 50%, transparent 50% 100%);
+  background-clip: content-box;
+  padding: 1.5px;
+}
+
+.ring.review {
+  border-color: var(--review);
+  background: conic-gradient(var(--review) 0 75%, transparent 75% 100%);
   background-clip: content-box;
   padding: 1.5px;
 }
