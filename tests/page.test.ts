@@ -75,6 +75,15 @@ for (const { page, script } of PAGES) {
   });
 }
 
+test('the Markdown renderer is a local file the Page loads before its script', async () => {
+  const html = await readFile(join(WEB, 'index.html'), 'utf8');
+  const paths = pathsIn(html);
+
+  assert.ok(paths.includes('markdown.js'), 'index.html does not load markdown.js');
+  assert.ok(paths.indexOf('markdown.js') < paths.indexOf('app.js'), 'markdown.js loads too late');
+  await stat(join(WEB, 'markdown.js'));
+});
+
 test('the Page claims nothing about Entries before it has asked', async () => {
   const html = await readFile(join(WEB, 'index.html'), 'utf8');
 

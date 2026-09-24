@@ -43,6 +43,12 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | -------------- | ------------------------------------------- | -------------------------------- |
 | `get_cycle`    | none                                        | the current Cycle and its Entries |
 | `create_entry` | `title`, `status`, optional `body`          | the new Entry                    |
+| `update_entry` | `id`, and any of `title`, `body`, `status`  | the Entry as it now is           |
+| `delete_entry` | `id`                                        | the Entry that is gone           |
+
+Any Status may go to any other. A `body` of `null` or `""` takes the body
+away. Bodies are Markdown; the Page shows them formatted with `web/markdown.js`,
+a small renderer written for this Plugin, so the Page loads nothing from a CDN.
 
 ## Running it
 

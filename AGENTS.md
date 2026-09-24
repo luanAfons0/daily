@@ -53,10 +53,11 @@ src/           the Plugin Server. Every file is one job.
   main.ts      start-up: open daily.db, serve the tools.
   store.ts     daily.db: open it, move it up to the current schema version.
   cycles.ts    a Cycle: the current one, and the first one, started by itself.
-  entries.ts   an Entry: add it, and check what a caller gave.
+  entries.ts   an Entry: add, change and delete it, and check what a caller gave.
   tools.ts     the tools this Plugin ships, for the Page and other Plugins.
   mcp.ts       the one connection to the Host: MCP over stdio.
-web/           the Plugin Page: index.html, app.css, app.js.
+web/           the Plugin Page: index.html, app.css, app.js, and markdown.js,
+               the small Markdown renderer it owns instead of a CDN.
 tests/         one file per behaviour, plus helpers/plugin.ts.
 docs/adr/      the decisions that are expensive to reverse.
 docs/agents/   how an agent works in this repo. See "Agent skills" below.
