@@ -56,6 +56,7 @@ src/           the Plugin Server. Every file is one job.
                start_cycle, which moves every Entry that is not Done, and the
                list of every Cycle there ever was.
   entries.ts   an Entry: add, change and delete it, and check what a caller gave.
+  meeting.ts   the Markdown for the Meeting: Done, then Working on.
   notes.ts     a Note: keep, change and delete it. It has no Status and no Cycle.
   tools.ts     the tools this Plugin ships, for the Page and other Plugins.
   mcp.ts       the one connection to the Host: MCP over stdio.

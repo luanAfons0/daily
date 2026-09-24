@@ -133,8 +133,9 @@ code, pre { font-family: var(--mono); font-size: 0.9em; }
 
 .sec-hd {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 12px;
+  gap: 8px 12px;
   margin-bottom: 12px;
 }
 

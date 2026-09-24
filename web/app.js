@@ -389,6 +389,46 @@ async function startCycle() {
 
 byId('start-cycle').addEventListener('click', startCycle);
 
+// --- copying the Markdown for the Meeting -------------------------------
+
+/**
+ * Put text on the clipboard. The Clipboard API is there on the Host's own
+ * address, which a browser counts as secure; the older copy command is the
+ * fallback for a window that refuses it.
+ */
+async function toClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    const scratch = el('textarea', { class: 'visually-hidden', 'aria-hidden': 'true' });
+    scratch.value = text;
+    document.body.append(scratch);
+    scratch.select();
+    const copied = document.execCommand('copy');
+    scratch.remove();
+    if (!copied) throw new Error('This window would not let the page use the clipboard.');
+  }
+}
+
+async function copyMeeting() {
+  const button = byId('copy-meeting');
+  button.disabled = true;
+  try {
+    const meeting = await call('meeting_markdown');
+    // Exactly what the tool answered, byte for byte: the page adds nothing.
+    await toClipboard(meeting.markdown);
+    notice('Copied the Markdown for the Meeting.');
+    say(null);
+  } catch (fault) {
+    say(fault.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+byId('copy-meeting').addEventListener('click', copyMeeting);
+
 // --- adding an Entry ------------------------------------------------------
 
 function chosenStatus() {

@@ -57,6 +57,7 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | `create_entry` | `title`, `status`, optional `body`          | the new Entry                    |
 | `update_entry` | `id`, and any of `title`, `body`, `status`  | the Entry as it now is           |
 | `delete_entry` | `id`                                        | the Entry that is gone           |
+| `meeting_markdown` | none                                    | the Markdown, and `{ markdown, done, workingOn }` |
 | `list_notes`   | none                                        | `{ notes }`, newest first        |
 | `create_note`  | `body`                                      | the new Note                     |
 | `update_note`  | `id`, `body`                                | the Note as it now is            |
@@ -68,6 +69,13 @@ Grant from Scheduler to Daily. Every call starts exactly one Cycle
 `Started the Cycle of Tue 23 Sep 10:00 and moved 4 Entries into it.` The
 moment is on the clock of the machine Daily runs on. The Page's **Start a new
 Cycle** button calls the same tool.
+
+`meeting_markdown` is what the Page's **Copy for the Meeting** button puts on
+the clipboard, unchanged. It has a "Done" section — the Entries Done in the
+Cycle before the current one, then those already Done in the current one — and
+a "Working on" section — the current Cycle's `In Progress` Entries, then its
+`Todo` ones. It lists titles only. Press it after the Meeting's `start_cycle`
+has run; before, "Done" also holds what was reported last time.
 
 Any Status may go to any other. A `body` of `null` or `""` takes the body
 away. Bodies are Markdown; the Page shows them formatted with `web/markdown.js`,
