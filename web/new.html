@@ -15,29 +15,44 @@
 <body class="popup">
 <main class="quick">
   <form class="quick-form" id="quick" autocomplete="off">
+    <!-- A breadcrumb, as the place this lands: Daily, then what is made. -->
     <div class="quick-hd">
-      <span class="mark" aria-hidden="true"></span>
+      <span class="crumb"><span class="mark" aria-hidden="true"></span>Daily</span>
+      <span class="crumb-sep" aria-hidden="true">›</span>
       <div class="kinds" role="radiogroup" aria-label="Add">
         <label class="pill"><input type="radio" name="kind" value="entry" checked><span>Entry</span></label>
         <label class="pill"><input type="radio" name="kind" value="note"><span>Note</span></label>
       </div>
+      <span class="crumb-sep" aria-hidden="true">›</span>
+      <!-- New, or one already there to edit: an Entry of the current Cycle,
+           or a Note, chosen by its title. new.js fills the list. -->
+      <select class="pick" id="q-pick" aria-label="New, or which one to edit">
+        <option value="">New</option>
+      </select>
+      <button class="quick-close" id="q-close" type="button" aria-label="Close" title="Close (Esc)"></button>
     </div>
 
-    <input class="input quick-title" id="q-title" type="text" placeholder="What are you working on?" aria-label="Title" autofocus>
-    <textarea class="input" id="q-body" rows="3" placeholder="Details, in Markdown. Optional." aria-label="Body"></textarea>
+    <div class="quick-sheet">
+      <!-- The ring before the title shows the Status the Entry will have. -->
+      <div class="quick-line" id="q-line">
+        <span class="ring todo" id="q-ring" aria-hidden="true"></span>
+        <input class="quick-title" id="q-title" type="text" placeholder="What are you working on?" aria-label="Title" autofocus>
+      </div>
+      <textarea class="quick-body" id="q-body" rows="3" placeholder="Add details, in Markdown…" aria-label="Body"></textarea>
+    </div>
 
     <!-- A Status belongs to an Entry. A Note has none, so this hides for one. -->
-    <div class="statuses" id="q-statuses" role="radiogroup" aria-label="Status">
-      <label class="pill"><input type="radio" name="status" value="Todo" checked><span><i class="dot todo"></i>Todo</span></label>
-      <label class="pill"><input type="radio" name="status" value="In Progress"><span><i class="dot doing"></i>In Progress</span></label>
-      <label class="pill"><input type="radio" name="status" value="Done"><span><i class="dot done"></i>Done</span></label>
+    <div class="chips" id="q-statuses" role="radiogroup" aria-label="Status">
+      <label class="chip"><input type="radio" name="status" value="Todo" checked><span><i class="ring todo"></i>Todo</span></label>
+      <label class="chip"><input type="radio" name="status" value="In Progress"><span><i class="ring doing"></i>In Progress</span></label>
+      <label class="chip"><input type="radio" name="status" value="Done"><span><i class="ring done"></i>Done</span></label>
     </div>
 
     <div id="q-banner" class="banner" role="alert" hidden></div>
 
     <div class="quick-foot">
-      <span class="hint">Enter saves · Shift+Enter for a new line</span>
-      <button class="act go" id="q-save" type="submit">Save</button>
+      <span class="hint">Enter saves · Shift+Enter for a new line · Esc closes</span>
+      <button class="act go" id="q-save" type="submit">Save Entry</button>
     </div>
   </form>
 </main>

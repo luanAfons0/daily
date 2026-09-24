@@ -36,6 +36,34 @@ function say(text) {
   banner.hidden = !text;
 }
 
+// --- asking before a delete ----------------------------------------------
+
+/**
+ * Ask one yes-or-no question in the Page's own dialog, and answer whether the
+ * person said yes. Closing it any other way — Keep it, Esc — is a no.
+ */
+function ask(question) {
+  const dialog = byId('confirm-dialog');
+  byId('confirm-hd').textContent = question.title;
+  byId('confirm-quote').textContent = question.quote || '';
+  byId('confirm-quote').hidden = !question.quote;
+  byId('confirm-text').textContent = question.text;
+  byId('confirm-yes').textContent = question.yes;
+  dialog.returnValue = '';
+  dialog.showModal();
+  byId('confirm-keep').focus();
+  return new Promise((answer) => {
+    dialog.addEventListener('close', () => answer(dialog.returnValue === 'yes'), { once: true });
+  });
+}
+
+/** The first line of a Note, short enough to quote in a question. */
+function firstLine(text) {
+  const line = String(text).split('\n').find((part) => part.trim() !== '') || '';
+  const plain = line.replace(/^[#>*\-+\s]+/, '').trim();
+  return plain.length > 80 ? plain.slice(0, 79) + '…' : plain;
+}
+
 // --- time -----------------------------------------------------------------
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -125,9 +153,14 @@ function entryCard(entry) {
     ]),
   ]);
   edit.addEventListener('click', () => card.replaceWith(entryEditor(entry)));
-  remove.addEventListener('click', () => {
-    if (!confirm('Delete “' + entry.title + '” for good?')) return;
-    void act(() => call('delete_entry', { id: entry.id }));
+  remove.addEventListener('click', async () => {
+    const yes = await ask({
+      title: 'Delete this Entry?',
+      quote: entry.title,
+      text: 'It leaves its Cycle and the Markdown for the Meeting. You cannot undo this.',
+      yes: 'Delete Entry',
+    });
+    if (yes) void act(() => call('delete_entry', { id: entry.id }));
   });
   return card;
 }
@@ -161,9 +194,55 @@ function entryEditor(entry) {
   return form;
 }
 
+// --- moving an Entry by dragging it -------------------------------------
+
+/** The Entry being dragged, while one is. */
+let dragged = null;
+
+/** An Entry card in the board, which can be dragged to another column. */
+function draggableCard(entry) {
+  const card = entryCard(entry);
+  card.draggable = true;
+  card.addEventListener('dragstart', (event) => {
+    dragged = entry;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', entry.title);
+    card.classList.add('dragging');
+  });
+  card.addEventListener('dragend', () => {
+    dragged = null;
+    card.classList.remove('dragging');
+    for (const column of document.querySelectorAll('.column.drop')) column.classList.remove('drop');
+  });
+  return card;
+}
+
+/** Let a column take an Entry dropped on it, and give it that column's Status. */
+function dropTarget(node, status) {
+  const welcome = (event) => {
+    if (!dragged || dragged.status === status.name) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    node.classList.add('drop');
+  };
+  node.addEventListener('dragenter', welcome);
+  node.addEventListener('dragover', welcome);
+  node.addEventListener('dragleave', (event) => {
+    if (!node.contains(event.relatedTarget)) node.classList.remove('drop');
+  });
+  node.addEventListener('drop', (event) => {
+    event.preventDefault();
+    node.classList.remove('drop');
+    const entry = dragged;
+    if (!entry || entry.status === status.name) return;
+    void act(() => call('update_entry', { id: entry.id, status: status.name }));
+  });
+  return node;
+}
+
 function column(status, entries) {
   const mine = entries.filter((entry) => entry.status === status.name);
-  return el('section', { class: 'column', 'aria-label': status.name }, [
+  return dropTarget(el('section', { class: 'column ' + status.dot, 'aria-label': status.name }, [
     el('div', { class: 'column-hd' }, [
       el('i', { class: 'dot ' + status.dot }),
       status.name,
@@ -171,8 +250,8 @@ function column(status, entries) {
     ]),
     ...(mine.length === 0
       ? [el('p', { class: 'column-empty', text: 'Nothing here.' })]
-      : mine.map(entryCard)),
-  ]);
+      : mine.map(draggableCard)),
+  ]), status);
 }
 
 function drawCycle(view) {
@@ -314,6 +393,7 @@ function noteCard(note) {
   const edit = el('button', { class: 'act quiet small', type: 'button', text: 'Edit' });
   const remove = el('button', { class: 'act quiet small danger', type: 'button', text: 'Delete' });
   const card = el('article', { class: 'card note' }, [
+    note.title ? el('h3', { class: 'note-title', text: note.title }) : null,
     formatted(note.body, 'note-body'),
     el('div', { class: 'entry-foot' }, [
       el('time', { class: 'hint', datetime: note.createdAt, text: moment(note.createdAt) }),
@@ -323,21 +403,45 @@ function noteCard(note) {
     ]),
   ]);
   edit.addEventListener('click', () => card.replaceWith(noteEditor(note)));
-  remove.addEventListener('click', () => {
-    if (!confirm('Delete this Note for good?')) return;
-    void act(() => call('delete_note', { id: note.id }));
+  remove.addEventListener('click', async () => {
+    const yes = await ask({
+      title: 'Delete this Note?',
+      quote: note.title || firstLine(note.body),
+      text: 'The whole Note is gone for good. You cannot undo this.',
+      yes: 'Delete Note',
+    });
+    if (yes) void act(() => call('delete_note', { id: note.id }));
   });
   return card;
 }
 
+/** Shift+Enter in a Note's body sends its form; Enter alone is a new line. */
+function sendOnShiftEnter(body) {
+  body.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || !event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    body.form.requestSubmit();
+  });
+}
+
 /** The same Note, open for its body to be edited in place. */
 function noteEditor(note) {
+  const title = el('input', {
+    class: 'input note-title-input',
+    type: 'text',
+    placeholder: 'Title',
+    'aria-label': 'Title',
+  });
+  title.value = note.title;
   const body = el('textarea', { class: 'input', rows: '5', 'aria-label': 'Note' });
   body.value = note.body;
+  sendOnShiftEnter(title);
+  sendOnShiftEnter(body);
   const form = el('form', { class: 'card note editing' }, [
+    title,
     body,
     el('div', { class: 'entry-foot' }, [
-      el('span', { class: 'hint', text: 'Markdown. Esc to cancel.' }),
+      el('span', { class: 'hint', text: 'Markdown. Shift+Enter saves, Esc cancels.' }),
       el('span', { class: 'grow' }),
       el('button', { class: 'act quiet small', type: 'button', text: 'Cancel', 'data-cancel': '' }),
       el('button', { class: 'act go small', type: 'submit', text: 'Save' }),
@@ -350,29 +454,75 @@ function noteEditor(note) {
   });
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    void act(() => call('update_note', { id: note.id, body: body.value }));
+    void act(() => call('update_note', { id: note.id, title: title.value, body: body.value }));
   });
   queueMicrotask(() => body.focus());
   return form;
 }
 
+// --- the Notes, laid out as masonry --------------------------------------
+
+/** The narrowest a column of Notes may be, and the gap between two. */
+const NOTE_WIDTH = 280;
+const NOTE_GAP = 12;
+
+/** The Note cards last drawn, newest first, and how many columns hold them. */
+let noteCards = [];
+let noteColumns = 0;
+
+/**
+ * Put each Note, newest first, into the shortest column so far. A long Note
+ * then pushes down only its own column, and the small Notes after it stay in
+ * view instead of waiting under the tallest card of a row.
+ */
+function layNotes() {
+  const list = byId('notes');
+  const width = list.clientWidth;
+  // A hidden tab has no width to measure; the observer below calls again
+  // when the tab is shown.
+  if (width === 0 || noteCards.length === 0) return;
+  noteColumns = Math.max(1, Math.floor((width + NOTE_GAP) / (NOTE_WIDTH + NOTE_GAP)));
+  const columns = Array.from({ length: noteColumns }, () => el('div', { class: 'notes-col' }));
+  list.replaceChildren(...columns);
+  for (const card of noteCards) {
+    let shortest = columns[0];
+    for (const column of columns) {
+      if (column.offsetHeight < shortest.offsetHeight) shortest = column;
+    }
+    shortest.append(card);
+  }
+}
+
+// Lay the Notes out again when the number of columns that fit changes, and
+// when the Notes tab is first shown, since a hidden list measured nothing.
+new ResizeObserver(() => {
+  const width = byId('notes').clientWidth;
+  const fits = Math.max(1, Math.floor((width + NOTE_GAP) / (NOTE_WIDTH + NOTE_GAP)));
+  if (width > 0 && (fits !== noteColumns || !byId('notes').querySelector('.notes-col'))) {
+    layNotes();
+  }
+}).observe(byId('notes'));
+
 function drawNotes(notes) {
   byId('notes-count').textContent = notes.length > 0 ? String(notes.length) : '';
-  const list = byId('notes');
+  noteCards = notes.map(noteCard);
   if (notes.length === 0) {
-    list.replaceChildren(el('p', { class: 'notes-empty', text: 'No Notes yet.' }));
+    byId('notes').replaceChildren(el('p', { class: 'notes-empty', text: 'No Notes yet.' }));
     return;
   }
-  list.replaceChildren(...notes.map(noteCard));
+  byId('notes').replaceChildren();
+  layNotes();
 }
 
 async function keepNote(event) {
   event.preventDefault();
+  const title = byId('n-title');
   const body = byId('n-body');
   const button = byId('n-add');
   button.disabled = true;
   try {
-    await call('create_note', { body: body.value });
+    await call('create_note', { title: title.value, body: body.value });
+    title.value = '';
     body.value = '';
     say(null);
     await load();
@@ -384,6 +534,15 @@ async function keepNote(event) {
 }
 
 byId('note-compose').addEventListener('submit', keepNote);
+sendOnShiftEnter(byId('n-title'));
+sendOnShiftEnter(byId('n-body'));
+
+// Enter in a Note's title goes on to its text, since the text is what is kept.
+byId('n-title').addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+  event.preventDefault();
+  byId('n-body').focus();
+});
 
 /**
  * Do one write, then draw the page again from what the Plugin Server now
@@ -523,6 +682,36 @@ async function add(event) {
 
 byId('compose').addEventListener('submit', add);
 
+// --- the forms that open when used -----------------------------------------
+
+/** Whether a pointer button is down, so a form knows a click is on its way. */
+let pressing = false;
+document.addEventListener('pointerdown', () => (pressing = true), true);
+document.addEventListener('pointerup', () => setTimeout(() => (pressing = false)), true);
+
+/**
+ * A form that is one line until it is used: open while it has the focus or
+ * holds any text, shut when it is left empty. It shuts only after a click
+ * has finished, because shutting moves the page up, and a click that began
+ * over one control would otherwise end over another.
+ */
+function opensWhenUsed(form) {
+  const fields = [...form.querySelectorAll('input[type="text"], textarea')];
+  const shut = () => {
+    if (form.contains(document.activeElement)) return;
+    if (fields.some((field) => field.value !== '')) return;
+    form.classList.remove('open');
+  };
+  form.addEventListener('focusin', () => form.classList.add('open'));
+  form.addEventListener('focusout', () => {
+    if (!pressing) return void setTimeout(shut);
+    document.addEventListener('pointerup', () => setTimeout(shut), { once: true, capture: true });
+  });
+}
+
+opensWhenUsed(byId('compose'));
+opensWhenUsed(byId('note-compose'));
+
 // --- the tabs -------------------------------------------------------------
 
 const TABS = [...document.querySelectorAll('[role="tab"]')];
@@ -560,9 +749,9 @@ function typing(target) {
 // Escape leaves the field to give them back.
 document.addEventListener('keydown', (event) => {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
-  if (byId('meeting-dialog').open) return;
+  if (document.querySelector('dialog[open]')) return;
   if (typing(event.target)) {
-    if (event.key === 'Escape' && event.target.closest('#compose')) event.target.blur();
+    if (event.key === 'Escape' && event.target.closest('#compose, #note-compose')) event.target.blur();
     return;
   }
   const tab = { 1: 'cycle', 2: 'earlier', 3: 'notes' }[event.key];

@@ -8,18 +8,32 @@ import { now, type Store } from './store.ts';
 /** One Note, as a caller sees it. */
 export type Note = {
   readonly id: number;
+  /** A short name for the Note, apart from its text. Empty when it has none. */
+  readonly title: string;
   /** Markdown. Never empty. */
   readonly body: string;
   readonly createdAt: string;
   readonly updatedAt: string;
 };
 
-type NoteRow = { id: number; body: string; created_at: string; updated_at: string };
+type NoteRow = {
+  id: number;
+  title: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
 
-const COLUMNS = 'id, body, created_at, updated_at';
+const COLUMNS = 'id, title, body, created_at, updated_at';
 
 function noteOf(row: NoteRow): Note {
-  return { id: row.id, body: row.body, createdAt: row.created_at, updatedAt: row.updated_at };
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 /** Every Note, newest first. Newest is the last written, so the order is by id. */
@@ -38,18 +52,25 @@ export function noteById(store: Store, id: number): Note {
 }
 
 /** A new Note. */
-export function createNote(store: Store, body: string): Note {
+export function createNote(store: Store, title: string, body: string): Note {
   const at = now();
   const done = store
-    .prepare('INSERT INTO notes (body, created_at, updated_at) VALUES (?, ?, ?)')
-    .run(body, at, at);
+    .prepare('INSERT INTO notes (title, body, created_at, updated_at) VALUES (?, ?, ?, ?)')
+    .run(title, body, at, at);
   return noteById(store, Number(done.lastInsertRowid));
 }
 
-/** One Note with a new body. */
-export function updateNote(store: Store, id: number, body: string): Note {
-  noteById(store, id);
-  store.prepare('UPDATE notes SET body = ?, updated_at = ? WHERE id = ?').run(body, now(), id);
+/** One Note with a new body, and a new title when one is given. */
+export function updateNote(
+  store: Store,
+  id: number,
+  title: string | undefined,
+  body: string,
+): Note {
+  const before = noteById(store, id);
+  store
+    .prepare('UPDATE notes SET title = ?, body = ?, updated_at = ? WHERE id = ?')
+    .run(title ?? before.title, body, now(), id);
   return noteById(store, id);
 }
 
@@ -66,6 +87,15 @@ export function checkNoteBody(tool: string, given: unknown): string {
     throw badInput(`${tool} needs "body": the Markdown text of the Note, which cannot be empty.`);
   }
   return given;
+}
+
+/** A Note's title as given, trimmed; undefined when none was given. */
+export function checkNoteTitle(tool: string, given: unknown): string | undefined {
+  if (given === undefined || given === null) return undefined;
+  if (typeof given !== 'string') {
+    throw badInput(`${tool} needs "title" to be text: a short name for the Note, or empty.`);
+  }
+  return given.trim();
 }
 
 /** A Note's id as given, or a sentence that says what an id is. */

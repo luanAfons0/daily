@@ -67,9 +67,14 @@
 
   <section class="panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
     <p class="panel-note">Kept apart from every Cycle. Newest first.</p>
-    <form class="note-compose" id="note-compose" autocomplete="off">
-      <textarea class="input" id="n-body" rows="2" placeholder="A Note, in Markdown." aria-label="Note" required></textarea>
-      <button class="act" id="n-add" type="submit">Keep Note</button>
+    <!-- The same shape as adding an Entry: one line until it is used. -->
+    <form class="compose note-compose" id="note-compose" autocomplete="off" aria-label="Keep a Note">
+      <input class="input title" id="n-title" type="text" placeholder="A new Note: its title" aria-label="Title">
+      <textarea class="input body" id="n-body" rows="3" placeholder="The Note, in Markdown." aria-label="Note" required></textarea>
+      <div class="compose-foot">
+        <span class="hint">Enter goes to the text · Shift+Enter keeps it · Esc leaves</span>
+        <button class="act go" id="n-add" type="submit">Keep Note</button>
+      </div>
     </form>
     <!-- Written by app.js out of what list_notes answered. -->
     <div class="notes" id="notes"></div>
@@ -96,6 +101,20 @@
     <pre class="meeting-md" id="meeting-md"></pre>
     <div class="meeting-acts">
       <button class="act go" id="copy-meeting" type="button">Copy for the Meeting</button>
+    </div>
+  </form>
+</dialog>
+<!-- The one question the Page asks before a delete, in its own words and
+     styles rather than the browser's confirm box. app.js fills it for each
+     question. Keep is the default, so Enter or Esc never deletes by mistake. -->
+<dialog class="ask" id="confirm-dialog" aria-labelledby="confirm-hd" aria-describedby="confirm-text">
+  <form method="dialog" class="ask-form">
+    <h2 id="confirm-hd"></h2>
+    <p class="ask-quote" id="confirm-quote"></p>
+    <p class="ask-text" id="confirm-text"></p>
+    <div class="ask-acts">
+      <button class="act" value="keep" type="submit" id="confirm-keep" autofocus>Keep it</button>
+      <button class="act danger-go" value="yes" type="submit" id="confirm-yes"></button>
     </div>
   </form>
 </dialog>

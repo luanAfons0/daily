@@ -71,3 +71,32 @@ test('a quote in a link text cannot break out of the address', async () => {
 
   assert.ok(!/href="[^"]*"onmouseover/.test(html), html);
 });
+
+test('an indented list item nests inside the item above it', async () => {
+  const render = await renderer();
+
+  const html = render('* Libs de UI:\n   * https://spell.sh/\n   * two\n* back out\n\t- tabbed in');
+
+  assert.match(
+    html,
+    /^<ul><li>Libs de UI:<ul><li><a [^>]*>spell\.sh<\/a><\/li><li>two<\/li><\/ul><\/li>/,
+  );
+  assert.match(html, /<li>back out<ul><li>tabbed in<\/li><\/ul><\/li><\/ul>$/);
+});
+
+test('a numbered list may nest inside a bulleted one, and the other way round', async () => {
+  const render = await renderer();
+
+  const html = render('- steps\n  1. first\n  2. second\n- done');
+
+  assert.equal(html, '<ul><li>steps<ol><li>first</li><li>second</li></ol></li><li>done</li></ul>');
+});
+
+test('a bare address reads short, and still goes to the whole address', async () => {
+  const render = await renderer();
+
+  const html = render('See https://www.cult-ui.com/ and https://github.com/a/b/pull/1');
+
+  assert.match(html, /<a href="https:\/\/www\.cult-ui\.com\/"[^>]*>cult-ui\.com<\/a>/);
+  assert.match(html, /<a href="https:\/\/github\.com\/a\/b\/pull\/1"[^>]*>github\.com\/a\/b\/pull\/1<\/a>/);
+});

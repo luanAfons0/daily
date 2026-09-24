@@ -3,8 +3,9 @@
    byte and nothing else (FirstMate ADR-0008), and a Plugin Page that reaches
    the internet stops working the day the internet is not there.
 
-   It covers what a person types in a quick note — paragraphs, headings, lists,
-   quotes, code, emphasis and links — and nothing more. Every character of the
+   It covers what a person types in a quick note — paragraphs, headings, lists
+   nested by indent, quotes, code, emphasis and links — and nothing more. A
+   bare address shows short, as spell.sh, and still goes to the whole address. Every character of the
    source is escaped before any Markdown is read, so text can never become
    markup; a link keeps only an http, https or mailto address, or a relative
    one. It defines one global: renderMarkdown(text) → an HTML string. */
@@ -28,10 +29,20 @@
     return escaped.trim();
   }
 
-  function link(text, escapedAddress) {
+  function link(text, escapedAddress, className) {
     const address = safeAddress(escapedAddress);
     if (address === null) return text;
-    return '<a href="' + address + '" target="_blank" rel="noopener noreferrer">' + text + '</a>';
+    return (
+      '<a href="' + address + '"' +
+      // A bare address shows short, so its whole self is kept in the tooltip.
+      (className ? ' class="' + className + '" title="' + address + '"' : '') +
+      ' target="_blank" rel="noopener noreferrer">' + text + '</a>'
+    );
+  }
+
+  /** A bare address as a person reads it: no scheme, no www, no last slash. */
+  function short(url) {
+    return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
   }
 
   /** One line of already escaped text, with its inline Markdown read. */
@@ -48,7 +59,7 @@
       return '\u0001' + (links.length - 1) + '\u0001';
     });
     out = out.replace(/(^|[\s(])(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g, function (_, before, url) {
-      links.push(link(url, url));
+      links.push(link(short(url), url, 'bare'));
       return before + '\u0001' + (links.length - 1) + '\u0001';
     });
     out = out
@@ -68,9 +79,51 @@
   const FENCE = /^\s*```/;
   const HEADING = /^(#{1,6})\s+(.*)$/;
   const QUOTE = /^\s*&gt;\s?(.*)$/;
-  const BULLET = /^\s*[-*+]\s+(.*)$/;
-  const NUMBERED = /^\s*\d+[.)]\s+(.*)$/;
   const RULE = /^\s*([-*_])(\s*\1){2,}\s*$/;
+  const ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+
+  /** How far a line is indented, a tab counting as four spaces. */
+  function indentOf(line) {
+    return /^\s*/.exec(line)[0].replace(/\t/g, '    ').length;
+  }
+
+  function item(text) {
+    const task = /^\[([ xX])\]\s+(.*)$/.exec(text);
+    return task
+      ? '<input type="checkbox" disabled' + (task[1] === ' ' ? '' : ' checked') + '> ' +
+          inline(task[2])
+      : inline(text);
+  }
+
+  /**
+   * One list, starting at line i and indented by base. A deeper item nests in
+   * the item above it; a shallower one, or a change of bullet at this depth,
+   * ends the list. Answers the HTML and the first line it did not read.
+   */
+  function list(lines, i, base) {
+    const ordered = /\d/.test(ITEM.exec(lines[i])[2]);
+    const items = [];
+    while (i < lines.length) {
+      const found = ITEM.exec(lines[i]);
+      if (!found) break;
+      const depth = indentOf(lines[i]);
+      if (depth < base) break;
+      if (depth > base && items.length > 0) {
+        const nested = list(lines, i, depth);
+        items[items.length - 1] += nested.html;
+        i = nested.next;
+        continue;
+      }
+      if (/\d/.test(found[2]) !== ordered) break;
+      items.push(item(found[3]));
+      i += 1;
+    }
+    const tag = ordered ? 'ol' : 'ul';
+    return {
+      html: '<' + tag + '>' + items.map((text) => '<li>' + text + '</li>').join('') + '</' + tag + '>',
+      next: i,
+    };
+  }
 
   function renderMarkdown(source) {
     const lines = escape(String(source || '')).replace(/\r\n?/g, '\n').split('\n');
@@ -124,21 +177,10 @@
         continue;
       }
 
-      const listKind = BULLET.test(line) ? 'ul' : NUMBERED.test(line) ? 'ol' : null;
-      if (listKind) {
-        const pattern = listKind === 'ul' ? BULLET : NUMBERED;
-        const items = [];
-        while (i < lines.length && pattern.test(lines[i])) {
-          let item = pattern.exec(lines[i])[1];
-          const task = /^\[([ xX])\]\s+(.*)$/.exec(item);
-          item = task
-            ? '<input type="checkbox" disabled' + (task[1] === ' ' ? '' : ' checked') + '> ' +
-              inline(task[2])
-            : inline(item);
-          items.push('<li>' + item + '</li>');
-          i += 1;
-        }
-        out.push('<' + listKind + '>' + items.join('') + '</' + listKind + '>');
+      if (ITEM.test(line)) {
+        const read = list(lines, i, indentOf(line));
+        out.push(read.html);
+        i = read.next;
         continue;
       }
 
@@ -149,8 +191,7 @@
         !FENCE.test(lines[i]) &&
         !HEADING.test(lines[i]) &&
         !QUOTE.test(lines[i]) &&
-        !BULLET.test(lines[i]) &&
-        !NUMBERED.test(lines[i])
+        !ITEM.test(lines[i])
       ) {
         paragraph.push(inline(lines[i]));
         i += 1;

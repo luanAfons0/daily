@@ -43,6 +43,11 @@ const STEPS: readonly string[] = [
     updated_at TEXT NOT NULL
   );
   `,
+  // A Note may have a title of its own. The Notes kept before this step have
+  // none; their text is left exactly as it was.
+  `
+  ALTER TABLE notes ADD COLUMN title TEXT NOT NULL DEFAULT '';
+  `,
 ];
 
 /** Open `daily.db`, and bring it up to the current version. */
