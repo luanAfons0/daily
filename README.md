@@ -44,6 +44,22 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 Everything lives in one file, `daily.db`, in the Plugin directory. Git ignores
 it. Daily starts empty.
 
+## The Popup form
+
+`web/new.html` is a small second page: choose Entry or Note, type, press
+Enter. An Entry has a title, a body and a Status that starts at `Todo`; a Note
+has only a body. Shift+Enter is a new line in the body. After a save the page
+goes to the main Plugin Page, `./`.
+
+It is the page a FirstMate Shortcut opens in a Popup. Going to `./` leaves
+the Popup's address, so the Popup hides by itself. In a normal browser, at
+`/p/daily/new.html`, it lands on the main page instead. Once the Shortcut work
+lands in FirstMate, bind it with:
+
+```sh
+node src/cli.ts bind <keys> daily new.html   # in FirstMate
+```
+
 ## Tools
 
 Every tool answers its data twice: as JSON text, and as `structuredContent`.
