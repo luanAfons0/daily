@@ -26,6 +26,7 @@ import {
   type EntryChange,
 } from './entries.ts';
 import { badInput } from './mcp.ts';
+import { meetingMarkdown } from './meeting.ts';
 import {
   checkNoteBody,
   checkNoteId,
@@ -182,6 +183,19 @@ export function toolsFor(store: Store): readonly Tool[] {
       call: (given) => {
         const id = checkNoteId('delete_note', given['id']);
         return told(within(store, () => deleteNote(store, id)));
+      },
+    },
+
+    {
+      name: 'meeting_markdown',
+      description:
+        'The Markdown for the Meeting: a "Done" section (the Entries Done in the Cycle before ' +
+        'the current one, and those already Done in the current one) and a "Working on" ' +
+        'section (the current In Progress Entries, then the Todo ones).',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      call: () => {
+        const meeting = within(store, () => meetingMarkdown(store));
+        return { content: [{ type: 'text', text: meeting.markdown }], structuredContent: meeting };
       },
     },
   ];

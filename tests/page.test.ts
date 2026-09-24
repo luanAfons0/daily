@@ -84,6 +84,13 @@ test('the Markdown renderer is a local file the Page loads before its script', a
   await stat(join(WEB, 'markdown.js'));
 });
 
+test('the Copy button puts exactly what meeting_markdown answered on the clipboard', async () => {
+  const code = await readFile(join(WEB, 'app.js'), 'utf8');
+
+  assert.match(code, /const meeting = await call\('meeting_markdown'\);/);
+  assert.match(code, /await toClipboard\(meeting\.markdown\);/);
+});
+
 test('the Page claims nothing about Entries or Notes before it has asked', async () => {
   const html = await readFile(join(WEB, 'index.html'), 'utf8');
 

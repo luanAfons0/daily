@@ -17,6 +17,7 @@ const TOOLS = [
   'get_cycle',
   'list_cycles',
   'list_notes',
+  'meeting_markdown',
   'start_cycle',
   'update_entry',
   'update_note',
@@ -68,6 +69,11 @@ test('a line on stdin that is not JSON is one sentence on stderr, and the pipe s
 
   plugin.raw('this is not JSON');
   const answer = await plugin.ask('tools/list');
+  // stderr and stdout are two pipes, so the sentence may land a moment after
+  // the answer that was written later.
+  for (let waited = 0; !plugin.output().includes('was not JSON') && waited < 2000; waited += 20) {
+    await new Promise((done) => setTimeout(done, 20));
+  }
 
   assert.ok(plugin.output().includes('was not JSON'), `stderr said: ${plugin.output()}`);
   assert.equal(plugin.lines().length, said + 1, 'the bad line was answered on stdout');
