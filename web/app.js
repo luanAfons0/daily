@@ -1,19 +1,8 @@
 /* The Daily Plugin Page. Vanilla JavaScript, no build step and no framework,
-   talking to one same-origin address. Everything it shows it learned by
-   asking its own Plugin Server; it assumes nothing, and it keeps no data of
-   its own. */
+   talking to one same-origin address through call() in rpc.js. Everything it
+   shows it learned by asking its own Plugin Server; it assumes nothing, and
+   it keeps no data of its own. */
 'use strict';
-
-// The one address this page talks to: its own Plugin's tools, relative to
-// the address the Host serves this page from. FirstMate admits the page with
-// a cookie it set on the first navigation, so nothing here carries a token and
-// no address is built by hand (FirstMate ADR-0003).
-const RPC = 'rpc';
-
-// What the Host answers when it cannot reach the Plugin Server at all. An
-// empty page would leave either one a mystery, so each becomes a sentence.
-const STOPPED = 503;
-const NO_PLUGIN_SERVER = 501;
 
 /** The three Statuses, in the order the columns stand. */
 const STATUSES = [
@@ -21,8 +10,6 @@ const STATUSES = [
   { name: 'In Progress', dot: 'doing' },
   { name: 'Done', dot: 'done' },
 ];
-
-let counter = 0;
 
 function el(tag, attrs, children) {
   const node = document.createElement(tag);
@@ -40,38 +27,6 @@ function el(tag, attrs, children) {
 }
 
 const byId = (id) => document.getElementById(id);
-
-/** One tool call on this Plugin's own Plugin Server. */
-async function call(name, args) {
-  const response = await fetch(RPC, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: (counter += 1),
-      method: 'tools/call',
-      params: { name: name, arguments: args || {} },
-    }),
-  });
-
-  if (response.status === STOPPED) {
-    throw new Error(
-      'Daily’s Plugin Server is Stopped. The reason is in the journal: ' +
-        'journalctl --user -u firstmate -f. The Host never starts it again on its own, ' +
-        'so restart the Host once it is fixed.',
-    );
-  }
-  if (response.status === NO_PLUGIN_SERVER) {
-    throw new Error('The Host found no Plugin Server for Daily, so it has nothing to show.');
-  }
-  if (!response.ok) {
-    throw new Error('The Host answered ' + response.status + ' for this call.');
-  }
-
-  const answered = await response.json();
-  if (answered.error) throw new Error(answered.error.message);
-  return answered.result.structuredContent;
-}
 
 // --- saying what is wrong -------------------------------------------------
 

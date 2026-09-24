@@ -60,9 +60,14 @@ src/           the Plugin Server. Every file is one job.
   notes.ts     a Note: keep, change and delete it. It has no Status and no Cycle.
   tools.ts     the tools this Plugin ships, for the Page and other Plugins.
   mcp.ts       the one connection to the Host: MCP over stdio.
-web/           the Plugin Page: index.html, app.css, app.js, and markdown.js,
-               the small Markdown renderer it owns instead of a CDN.
+web/           the Plugin Page and the Popup form, as the Host serves them.
+  index.html   the Plugin Page, drawn by app.js.
+  new.html     the Popup form a FirstMate Shortcut opens, driven by new.js.
+  rpc.js       call(): one tool call over POST rpc, for both pages.
+  markdown.js  the small Markdown renderer this Plugin owns instead of a CDN.
+  app.css      one stylesheet for both pages.
 tests/         one file per behaviour, plus helpers/plugin.ts.
+               page.test.ts and markdown.test.ts read web/ off disk.
 docs/adr/      the decisions that are expensive to reverse.
 docs/agents/   how an agent works in this repo. See "Agent skills" below.
 ```

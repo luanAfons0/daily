@@ -17,7 +17,10 @@ const REPOSITORY = dirname(dirname(fileURLToPath(import.meta.url)));
 const WEB = join(REPOSITORY, 'web');
 
 /** Every page in web/, and the script each one runs. */
-const PAGES = [{ page: 'index.html', script: 'app.js' }];
+const PAGES = [
+  { page: 'index.html', script: 'app.js' },
+  { page: 'new.html', script: 'new.js' },
+];
 
 /** Every `href` and `src` the page names, in the order it names them. */
 function pathsIn(html: string): string[] {
@@ -67,13 +70,41 @@ for (const { page, script } of PAGES) {
     }
   });
 
-  test(`${script} calls its tools over the relative rpc address, never an absolute one`, async () => {
+  test(`${page} calls its tools through rpc.js, loaded before ${script}`, async () => {
+    const html = await readFile(join(WEB, page), 'utf8');
     const code = await readFile(join(WEB, script), 'utf8');
+    const paths = pathsIn(html);
 
-    assert.match(code, /const RPC = 'rpc';/);
+    assert.ok(paths.includes('rpc.js'), `${page} does not load rpc.js`);
+    assert.ok(paths.indexOf('rpc.js') < paths.indexOf(script), 'rpc.js loads too late');
     assert.ok(!code.includes('/p/daily'), `${script} names the Plugin's address by hand`);
   });
 }
+
+test('rpc.js calls the tools over the relative rpc address, never an absolute one', async () => {
+  const code = await readFile(join(WEB, 'rpc.js'), 'utf8');
+
+  assert.match(code, /const RPC = 'rpc';/);
+  assert.match(code, /method: 'tools\/call'/);
+  assert.ok(!code.includes('/p/daily'), "rpc.js names the Plugin's address by hand");
+});
+
+test('the Popup form goes to the main Plugin Page after a save, by a relative path', async () => {
+  const code = await readFile(join(WEB, 'new.js'), 'utf8');
+
+  assert.match(code, /location\.assign\('\.\/'\);/);
+});
+
+test('the Popup form offers an Entry and a Note, and a Status that starts at Todo', async () => {
+  const html = await readFile(join(WEB, 'new.html'), 'utf8');
+
+  assert.match(html, /name="kind" value="entry" checked/);
+  assert.match(html, /name="kind" value="note"/);
+  assert.match(html, /name="status" value="Todo" checked/);
+  for (const status of ['In Progress', 'Done']) {
+    assert.ok(html.includes(`name="status" value="${status}"`), `no ${status} to choose`);
+  }
+});
 
 test('the Markdown renderer is a local file the Page loads before its script', async () => {
   const html = await readFile(join(WEB, 'index.html'), 'utf8');
