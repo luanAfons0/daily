@@ -122,6 +122,31 @@
     </div>
   </form>
 </dialog>
+<!-- An Entry or a Note, open to be edited. It is a dialog rather than a card
+     in place, so the cards around it keep their places while it is written
+     in. The Status is there for an Entry only. -->
+<dialog class="sheet" id="edit-dialog" aria-labelledby="edit-hd">
+  <form class="sheet-form" id="edit-form" autocomplete="off">
+    <div class="sheet-hd">
+      <h2 id="edit-hd">Edit</h2>
+      <button class="quick-close" id="ed-close" type="button" aria-label="Close" title="Close (Esc)"></button>
+    </div>
+    <input class="sheet-title" id="ed-title" type="text" placeholder="Title" aria-label="Title">
+    <textarea class="sheet-body" id="ed-body" rows="10" placeholder="Details, in Markdown." aria-label="Text"></textarea>
+    <div class="chips sheet-statuses" id="ed-statuses" role="radiogroup" aria-label="Status">
+      <label class="chip"><input type="radio" name="edit-status" value="Todo"><span><i class="ring todo"></i>Todo</span></label>
+      <label class="chip"><input type="radio" name="edit-status" value="In Progress"><span><i class="ring doing"></i>In Progress</span></label>
+      <label class="chip"><input type="radio" name="edit-status" value="In Review"><span><i class="ring review"></i>In Review</span></label>
+      <label class="chip"><input type="radio" name="edit-status" value="Done"><span><i class="ring done"></i>Done</span></label>
+    </div>
+    <p class="sheet-error" id="ed-error" role="alert" hidden></p>
+    <div class="sheet-foot">
+      <span class="hint">Markdown · Shift+Enter saves · Enter for a new line · Esc cancels</span>
+      <button class="act quiet" id="ed-cancel" type="button">Cancel</button>
+      <button class="act go" id="ed-save" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
 <script src="rpc.js"></script>
 <script src="markdown.js"></script>
 <script src="app.js"></script>

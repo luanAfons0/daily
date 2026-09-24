@@ -159,7 +159,8 @@ function entryCard(entry) {
       remove,
     ]),
   ]);
-  edit.addEventListener('click', () => card.replaceWith(entryEditor(entry)));
+  edit.addEventListener('click', () => editEntry(entry));
+  opensOnDoubleClick(card, () => editEntry(entry));
   remove.addEventListener('click', async () => {
     const yes = await ask({
       title: 'Delete this Entry?',
@@ -172,36 +173,6 @@ function entryCard(entry) {
   return card;
 }
 
-/** The same Entry, open for its title and body to be edited in place. */
-function entryEditor(entry) {
-  const title = el('input', { class: 'input', type: 'text', 'aria-label': 'Title' });
-  title.value = entry.title;
-  const body = el('textarea', { class: 'input', rows: '4', 'aria-label': 'Body' });
-  body.value = entry.body || '';
-  sendOnShiftEnter(title);
-  sendOnShiftEnter(body);
-  const form = el('form', { class: 'card entry editing' }, [
-    title,
-    body,
-    el('div', { class: 'entry-foot' }, [
-      el('span', { class: 'hint', text: 'Markdown. Shift+Enter saves, Esc cancels.' }),
-      el('span', { class: 'grow' }),
-      el('button', { class: 'act quiet small', type: 'button', text: 'Cancel', 'data-cancel': '' }),
-      el('button', { class: 'act go small', type: 'submit', text: 'Save' }),
-    ]),
-  ]);
-  const cancel = () => void load();
-  form.querySelector('[data-cancel]').addEventListener('click', cancel);
-  form.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') cancel();
-  });
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    void act(() => call('update_entry', { id: entry.id, title: title.value, body: body.value }));
-  });
-  queueMicrotask(() => title.focus());
-  return form;
-}
 
 // --- moving an Entry by dragging it -------------------------------------
 
@@ -350,14 +321,44 @@ function counted(counts) {
   return parts.length === 0 ? 'nothing recorded' : parts.join(' · ');
 }
 
+/** How tall a body in an earlier Cycle may be before it is folded, in px. */
+const FOLD_AT = 168;
+
+/**
+ * Fold a long body, so that one long Entry does not push the others of its
+ * Cycle out of sight. A body only a little longer is left whole: folding off
+ * two lines saves nothing. A card on a hidden tab cannot be measured, so it
+ * waits until its tab is shown (showTab); one already folded is left alone.
+ */
+function foldIfLong(card) {
+  const body = card.querySelector('.entry-body');
+  if (!body || body.clientWidth === 0 || card.querySelector('.unfold')) return;
+  if (body.scrollHeight <= FOLD_AT + 40) return;
+  body.classList.add('folded');
+  const more = el('button', {
+    class: 'act quiet small unfold',
+    type: 'button',
+    text: 'Show all',
+    'aria-expanded': 'false',
+  });
+  more.addEventListener('click', () => {
+    const open = !body.classList.toggle('folded');
+    more.textContent = open ? 'Show less' : 'Show all';
+    more.setAttribute('aria-expanded', String(open));
+  });
+  body.after(more);
+}
+
 async function fillEarlier(body, id) {
   try {
     const view = await call('get_cycle', { id: id });
+    const cards = view.entries.map(entryCard);
     body.replaceChildren(
-      ...(view.entries.length === 0
+      ...(cards.length === 0
         ? [el('p', { class: 'column-empty', text: 'Nothing was Done in this Cycle.' })]
-        : view.entries.map(entryCard)),
+        : cards),
     );
+    for (const card of cards) foldIfLong(card);
   } catch (fault) {
     say(fault.message);
   }
@@ -428,7 +429,8 @@ function drawEarlier(cycles) {
     ...(shown.length === 0
       ? [el('p', { class: 'notes-empty', text: 'No earlier Cycle has an Entry in it.' })]
       : shown.map(earlierCycle)),
-    empty > 0 ? el('p', { class: 'earlier-empty' }, [toggle]) : null,
+    // replaceChildren writes a null as the word "null", so none is passed.
+    ...(empty > 0 ? [el('p', { class: 'earlier-empty' }, [toggle])] : []),
   );
 }
 
@@ -447,7 +449,8 @@ function noteCard(note) {
       remove,
     ]),
   ]);
-  edit.addEventListener('click', () => card.replaceWith(noteEditor(note)));
+  edit.addEventListener('click', () => editNote(note));
+  opensOnDoubleClick(card, () => editNote(note));
   remove.addEventListener('click', async () => {
     const yes = await ask({
       title: 'Delete this Note?',
@@ -469,41 +472,93 @@ function sendOnShiftEnter(body) {
   });
 }
 
-/** The same Note, open for its body to be edited in place. */
-function noteEditor(note) {
-  const title = el('input', {
-    class: 'input note-title-input',
-    type: 'text',
-    placeholder: 'Title',
-    'aria-label': 'Title',
-  });
-  title.value = note.title;
-  const body = el('textarea', { class: 'input', rows: '5', 'aria-label': 'Note' });
-  body.value = note.body;
-  sendOnShiftEnter(title);
-  sendOnShiftEnter(body);
-  const form = el('form', { class: 'card note editing' }, [
-    title,
-    body,
-    el('div', { class: 'entry-foot' }, [
-      el('span', { class: 'hint', text: 'Markdown. Shift+Enter saves, Esc cancels.' }),
-      el('span', { class: 'grow' }),
-      el('button', { class: 'act quiet small', type: 'button', text: 'Cancel', 'data-cancel': '' }),
-      el('button', { class: 'act go small', type: 'submit', text: 'Save' }),
-    ]),
-  ]);
-  const cancel = () => void load();
-  form.querySelector('[data-cancel]').addEventListener('click', cancel);
-  form.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') cancel();
-  });
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    void act(() => call('update_note', { id: note.id, title: title.value, body: body.value }));
-  });
-  queueMicrotask(() => body.focus());
-  return form;
+// --- editing an Entry or a Note, in one dialog ---------------------------
+
+/** What is open in the editor: which kind, and the Entry or Note itself. */
+let editing = null;
+
+/**
+ * Open the editor dialog on an Entry or a Note. The fields are the same, a
+ * title and a text; an Entry also has its Status, as chips.
+ */
+function openEditor(kind, item) {
+  editing = { kind, item };
+  const entry = kind === 'entry';
+  byId('edit-hd').textContent = entry ? 'Edit Entry' : 'Edit Note';
+  byId('ed-title').value = item.title;
+  byId('ed-title').required = entry;
+  byId('ed-body').value = item.body || '';
+  byId('ed-body').required = !entry;
+  byId('ed-body').placeholder = entry ? 'Details, in Markdown. Optional.' : 'The Note, in Markdown.';
+  byId('ed-statuses').hidden = !entry;
+  for (const choice of document.querySelectorAll('input[name="edit-status"]')) {
+    choice.checked = entry && choice.value === item.status;
+  }
+  byId('ed-save').textContent = entry ? 'Save Entry' : 'Save Note';
+  byId('ed-error').hidden = true;
+  byId('edit-dialog').showModal();
+  byId('ed-body').focus();
 }
+
+function editEntry(entry) {
+  openEditor('entry', entry);
+}
+
+function editNote(note) {
+  openEditor('note', note);
+}
+
+/**
+ * A double-click on a card opens its editor, so a long card needs no scroll
+ * down to its Edit button. A double-click on a link or a control is left to
+ * that control.
+ */
+function opensOnDoubleClick(card, open) {
+  card.addEventListener('dblclick', (event) => {
+    if (event.target.closest('a, button, select, input')) return;
+    window.getSelection()?.removeAllRanges();
+    open();
+  });
+}
+
+async function saveEdit(event) {
+  event.preventDefault();
+  if (!editing) return;
+  const { kind, item } = editing;
+  const title = byId('ed-title').value;
+  const body = byId('ed-body').value;
+  const button = byId('ed-save');
+  button.disabled = true;
+  try {
+    if (kind === 'entry') {
+      const chosen = document.querySelector('input[name="edit-status"]:checked');
+      await call('update_entry', {
+        id: item.id,
+        title,
+        body,
+        status: chosen ? chosen.value : item.status,
+      });
+    } else {
+      await call('update_note', { id: item.id, title, body });
+    }
+    byId('edit-dialog').close();
+    say(null);
+    await load();
+  } catch (fault) {
+    // Said in the dialog, since the banner is behind it.
+    byId('ed-error').textContent = fault.message;
+    byId('ed-error').hidden = false;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+byId('edit-form').addEventListener('submit', saveEdit);
+byId('ed-cancel').addEventListener('click', () => byId('edit-dialog').close());
+byId('ed-close').addEventListener('click', () => byId('edit-dialog').close());
+byId('edit-dialog').addEventListener('close', () => (editing = null));
+sendOnShiftEnter(byId('ed-title'));
+sendOnShiftEnter(byId('ed-body'));
 
 // --- the Notes, laid out as masonry --------------------------------------
 
@@ -879,6 +934,9 @@ function showTab(name, focus) {
     document.getElementById(tab.getAttribute('aria-controls')).hidden = !chosen;
     if (chosen && focus) tab.focus();
   }
+  if (known === 'earlier') {
+    for (const card of document.querySelectorAll('.earlier-body .entry')) foldIfLong(card);
+  }
   history.replaceState(null, '', '#' + known);
 }
 
@@ -921,11 +979,11 @@ showTab(location.hash.slice(1));
 
 /**
  * Draw the page again from the Plugin Server, unless an Entry or a Note is
- * open in an editor: a redraw would throw away what is being typed, and the
- * editor draws the page again itself when it saves or cancels.
+ * open in the editor dialog: a redraw would throw away what is being typed,
+ * and the editor draws the page again itself when it saves or cancels.
  */
 function refresh() {
-  if (document.querySelector('.editing')) return;
+  if (document.querySelector('#edit-dialog[open]')) return;
   void load();
 }
 

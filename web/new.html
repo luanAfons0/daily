@@ -26,9 +26,17 @@
       <span class="crumb-sep" aria-hidden="true">›</span>
       <!-- New, or one already there to edit: an Entry of the current Cycle,
            or a Note, chosen by its title. new.js fills the list. -->
-      <select class="pick" id="q-pick" aria-label="New, or which one to edit">
-        <option value="">New</option>
-      </select>
+      <div class="picker">
+        <button class="pick" id="q-pick" type="button" aria-haspopup="listbox"
+                aria-expanded="false" aria-controls="q-menu"><span class="pick-name">New</span></button>
+        <!-- The menu: a find field, New, then what can be edited. new.js
+             fills it; for an Entry it groups them by Status, as the board. -->
+        <div class="pick-menu" id="q-menu" hidden>
+          <input class="pick-find" id="q-find" type="text" role="combobox" aria-expanded="true"
+                 aria-controls="q-list" aria-autocomplete="list" placeholder="Find…" aria-label="Find">
+          <div class="pick-list" id="q-list" role="listbox" aria-label="New, or which one to edit"></div>
+        </div>
+      </div>
       <button class="quick-close" id="q-close" type="button" aria-label="Close" title="Close (Esc)"></button>
     </div>
 
@@ -52,7 +60,7 @@
     <div id="q-banner" class="banner" role="alert" hidden></div>
 
     <div class="quick-foot">
-      <span class="hint">Enter saves · Shift+Enter for a new line · Esc closes</span>
+      <span class="hint">Shift+Enter saves · Enter for a new line · Esc closes</span>
       <button class="act go" id="q-save" type="submit">Save Entry</button>
     </div>
   </form>

@@ -156,9 +156,39 @@ test('the Popup tells the Plugin Page what it saved, so the Page draws it withou
   assert.match(page, /new BroadcastChannel\('daily'\)/);
 });
 
-test('Shift+Enter saves in every editor on the Page, the Entry editor too', async () => {
+test('an Entry and a Note are edited in one dialog, so the cards around them do not move', async () => {
+  const html = await readFile(join(WEB, 'index.html'), 'utf8');
   const code = await readFile(join(WEB, 'app.js'), 'utf8');
-  const editor = code.slice(code.indexOf('function entryEditor'), code.indexOf('function column'));
 
-  assert.match(editor, /sendOnShiftEnter\(body\)/);
+  assert.match(html, /<dialog[^>]*id="edit-dialog"/);
+  assert.match(html, /name="edit-status"/);
+  assert.ok(!code.includes('card.replaceWith('), 'a card is still edited in place');
+  assert.match(code, /sendOnShiftEnter\(byId\('ed-body'\)\)/);
+});
+
+test('a double-click on a card opens its editor, so a long one needs no scroll to Edit', async () => {
+  const code = await readFile(join(WEB, 'app.js'), 'utf8');
+
+  assert.match(code, /addEventListener\('dblclick'/);
+  assert.match(code, /opensOnDoubleClick\(card, \(\) => editEntry\(entry\)\)/);
+  assert.match(code, /opensOnDoubleClick\(card, \(\) => editNote\(note\)\)/);
+});
+
+test('an open dialog stops the page behind it from scrolling, and casts no glow', async () => {
+  const css = await readFile(join(WEB, 'app.css'), 'utf8');
+
+  assert.match(css, /html:has\(dialog\[open\]\)\s*\{\s*overflow: hidden;/);
+  for (const dialog of ['.sheet {', '.ask {']) {
+    const rule = css.slice(css.indexOf(dialog), css.indexOf('}', css.indexOf(dialog)));
+    assert.ok(!rule.includes('box-shadow'), `${dialog} still has a shadow`);
+  }
+});
+
+test('the Popup keeps the keys of the Page: Shift+Enter saves, Enter is a new line in the text', async () => {
+  const code = await readFile(join(WEB, 'new.js'), 'utf8');
+  const html = await readFile(join(WEB, 'new.html'), 'utf8');
+
+  assert.match(code, /event\.key === 'Enter' && event\.shiftKey/);
+  assert.ok(!/event\.key === 'Enter' && !event\.shiftKey/.test(code), 'Enter alone still saves');
+  assert.match(html, /Shift\+Enter saves/);
 });
