@@ -51,12 +51,20 @@ function entryOf(row: EntryRow): Entry {
   };
 }
 
-/** Every Entry in one Cycle, oldest first. */
+/** Every Entry in one Cycle, each column in the order the person set. */
 export function entriesIn(store: Store, cycleId: number): Entry[] {
   const rows = store
-    .prepare(`SELECT ${COLUMNS} FROM entries WHERE cycle_id = ? ORDER BY id`)
+    .prepare(`SELECT ${COLUMNS} FROM entries WHERE cycle_id = ? ORDER BY position, id`)
     .all(cycleId) as EntryRow[];
   return rows.map(entryOf);
+}
+
+/** A place after every Entry there is, so what gets it goes to the end. */
+function lastPosition(store: Store): number {
+  const row = store.prepare('SELECT MAX(position) AS last FROM entries').get() as {
+    last: number | null;
+  };
+  return (row.last ?? 0) + 1;
 }
 
 /** One Entry by its id, or a sentence that says there is none. */
@@ -77,10 +85,10 @@ export function createEntry(
   const at = now();
   const done = store
     .prepare(
-      'INSERT INTO entries (cycle_id, title, body, status, created_at, updated_at) ' +
-        'VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO entries (cycle_id, title, body, status, position, created_at, updated_at) ' +
+        'VALUES (?, ?, ?, ?, ?, ?, ?)',
     )
-    .run(cycleId, fields.title, fields.body, fields.status, at, at);
+    .run(cycleId, fields.title, fields.body, fields.status, lastPosition(store), at, at);
   return entryById(store, Number(done.lastInsertRowid));
 }
 
@@ -98,6 +106,7 @@ export type EntryChange = {
  * An Entry that is not `Done` is always in the current Cycle. So a `Done`
  * Entry in an earlier Cycle that is set back to `Todo` or `In Progress` moves
  * into the current Cycle in this same write; the caller holds the transaction.
+ * An Entry given a new Status goes to the end of its new column.
  */
 export function updateEntry(
   store: Store,
@@ -118,6 +127,48 @@ export function updateEntry(
         'WHERE id = ?',
     )
     .run(cycleId, after.title, after.body, after.status, now(), id);
+  if (after.status !== before.status) {
+    store.prepare('UPDATE entries SET position = ? WHERE id = ?').run(lastPosition(store), id);
+  }
+  return entryById(store, id);
+}
+
+/**
+ * Give one Entry a place in its column: above the Entry named by `before`, or
+ * at the end when there is none. A Status, when given, first moves it into
+ * that column, by the same rules as update_entry. The caller holds the
+ * transaction.
+ */
+export function moveEntry(
+  store: Store,
+  id: number,
+  place: { readonly status?: Status; readonly before: number | null },
+  currentCycleId: () => number,
+): Entry {
+  const start = entryById(store, id);
+  const moved =
+    place.status === undefined || place.status === start.status
+      ? start
+      : updateEntry(store, id, { status: place.status }, currentCycleId);
+  const others = entriesIn(store, moved.cycleId).filter(
+    (entry) => entry.status === moved.status && entry.id !== id,
+  );
+
+  let at = others.length;
+  if (place.before !== null) {
+    at = others.findIndex((entry) => entry.id === place.before);
+    if (at === -1) {
+      throw badInput(
+        `move_entry needs "before" to be another Entry in the same column: ` +
+          `${moved.status}, in the same Cycle. ${place.before} is not one.`,
+      );
+    }
+  }
+  // The column is numbered again from the top, so no two places ever tie.
+  const order = [...others.slice(0, at), moved, ...others.slice(at)];
+  const placed = store.prepare('UPDATE entries SET position = ? WHERE id = ?');
+  const base = lastPosition(store);
+  order.forEach((entry, index) => placed.run(base + index, entry.id));
   return entryById(store, id);
 }
 

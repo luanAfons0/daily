@@ -115,11 +115,16 @@ test('the Markdown renderer is a local file the Page loads before its script', a
   await stat(join(WEB, 'markdown.js'));
 });
 
-test('the Copy button puts exactly what meeting_markdown answered on the clipboard', async () => {
+test('the presentation shows what the Meeting reports, as meeting_markdown decides it', async () => {
+  const html = await readFile(join(WEB, 'index.html'), 'utf8');
   const code = await readFile(join(WEB, 'app.js'), 'utf8');
 
-  assert.match(code, /const meeting = await call\('meeting_markdown'\);/);
-  assert.match(code, /await toClipboard\(meeting\.markdown\);/);
+  assert.match(html, /<button[^>]*id="present"[^>]*>Start presentation<\/button>/);
+  assert.match(html, /<dialog[^>]*id="stage"/);
+  assert.match(code, /call\('meeting_markdown'\)/);
+  assert.match(code, /meeting\.done/);
+  assert.match(code, /meeting\.workingOn/);
+  assert.ok(!html.includes('copy-meeting'), 'the old Copy for the Meeting dialog is still there');
 });
 
 test('the Page claims nothing about Entries or Notes before it has asked', async () => {
@@ -137,4 +142,23 @@ test('the Page asks before a delete in its own dialog, never in the browser conf
 
   assert.ok(!/\bconfirm\(/.test(code), 'app.js still opens the browser confirm box');
   assert.match(html, /<dialog[^>]*id="confirm-dialog"/);
+});
+
+test('the Popup tells the Plugin Page what it saved, so the Page draws it without a reload', async () => {
+  const popup = await readFile(join(WEB, 'new.js'), 'utf8');
+  const page = await readFile(join(WEB, 'app.js'), 'utf8');
+
+  assert.match(popup, /new BroadcastChannel\('daily'\)/);
+  assert.ok(
+    popup.indexOf('.postMessage(') < popup.lastIndexOf("location.assign('./');"),
+    'the Popup leaves before it says what it saved',
+  );
+  assert.match(page, /new BroadcastChannel\('daily'\)/);
+});
+
+test('Shift+Enter saves in every editor on the Page, the Entry editor too', async () => {
+  const code = await readFile(join(WEB, 'app.js'), 'utf8');
+  const editor = code.slice(code.indexOf('function entryEditor'), code.indexOf('function column'));
+
+  assert.match(editor, /sendOnShiftEnter\(body\)/);
 });
