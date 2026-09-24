@@ -45,6 +45,19 @@
       <p class="card empty">Asking the Plugin Server for the current Cycle.</p>
     </div>
   </section>
+
+  <section class="sec" aria-labelledby="notes-hd">
+    <div class="sec-hd">
+      <h2 id="notes-hd">Notes</h2>
+      <span class="sec-note">Kept apart from every Cycle. Newest first.</span>
+    </div>
+    <form class="card note-compose" id="note-compose" autocomplete="off">
+      <textarea class="input" id="n-body" rows="2" placeholder="A Note, in Markdown." aria-label="Note" required></textarea>
+      <button class="act" id="n-add" type="submit">Keep Note</button>
+    </form>
+    <!-- Written by app.js out of what list_notes answered. -->
+    <div class="notes" id="notes"></div>
+  </section>
 </main>
 <script src="markdown.js"></script>
 <script src="app.js"></script>

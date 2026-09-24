@@ -84,11 +84,11 @@ test('the Markdown renderer is a local file the Page loads before its script', a
   await stat(join(WEB, 'markdown.js'));
 });
 
-test('the Page claims nothing about Entries before it has asked', async () => {
+test('the Page claims nothing about Entries or Notes before it has asked', async () => {
   const html = await readFile(join(WEB, 'index.html'), 'utf8');
 
   assert.ok(
-    !/Nothing here|no Entries/i.test(html),
-    'the served markup already says the Cycle is empty, which it cannot know before get_cycle',
+    !/Nothing here|no Entries|No Notes/i.test(html),
+    'the served markup already says something is empty, which it cannot know before it asks',
   );
 });

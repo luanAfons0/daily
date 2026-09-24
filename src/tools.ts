@@ -19,12 +19,22 @@ import {
   type EntryChange,
 } from './entries.ts';
 import { badInput } from './mcp.ts';
+import {
+  checkNoteBody,
+  checkNoteId,
+  createNote,
+  deleteNote,
+  listNotes,
+  updateNote,
+} from './notes.ts';
 import type { Tool, ToolResult } from './mcp.ts';
 import { within, type Store } from './store.ts';
 
 const TITLE = { type: 'string', description: 'One line that says what the Entry is.' };
 const BODY = { type: 'string', description: 'Details, as Markdown. Optional.' };
 const ID = { type: 'integer', description: 'The id of the Entry, from get_cycle.' };
+const NOTE_ID = { type: 'integer', description: 'The id of the Note, from list_notes.' };
+const NOTE_BODY = { type: 'string', description: 'The text of the Note, as Markdown.' };
 const STATUS = { type: 'string', enum: STATUSES, description: 'Where the Entry stands.' };
 
 /** The tools, over one open Store. */
@@ -84,6 +94,48 @@ export function toolsFor(store: Store): readonly Tool[] {
       call: (given) => {
         const id = checkId('delete_entry', given['id']);
         return told(within(store, () => deleteEntry(store, id)));
+      },
+    },
+
+    {
+      name: 'list_notes',
+      description: 'Every Note, newest first. A Note has no Status and belongs to no Cycle.',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      call: () => told({ notes: listNotes(store) }),
+    },
+
+    {
+      name: 'create_note',
+      description: 'Keep one Note: free Markdown text that no Cycle ever moves.',
+      inputSchema: { type: 'object', properties: { body: NOTE_BODY }, required: ['body'] },
+      call: (given) => {
+        const body = checkNoteBody('create_note', given['body']);
+        return told(within(store, () => createNote(store, body)));
+      },
+    },
+
+    {
+      name: 'update_note',
+      description: 'Give one Note a new body.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: NOTE_ID, body: NOTE_BODY },
+        required: ['id', 'body'],
+      },
+      call: (given) => {
+        const id = checkNoteId('update_note', given['id']);
+        const body = checkNoteBody('update_note', given['body']);
+        return told(within(store, () => updateNote(store, id, body)));
+      },
+    },
+
+    {
+      name: 'delete_note',
+      description: 'Take one Note away for good.',
+      inputSchema: { type: 'object', properties: { id: NOTE_ID }, required: ['id'] },
+      call: (given) => {
+        const id = checkNoteId('delete_note', given['id']);
+        return told(within(store, () => deleteNote(store, id)));
       },
     },
   ];

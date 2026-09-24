@@ -30,6 +30,8 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 - A **Cycle** is the time from one Meeting to the next, named by the moment it
   started. A new Entry goes into the current Cycle. The first Cycle starts by
   itself the first time Daily needs one.
+- A **Note** is free Markdown text. It has no Status and belongs to no Cycle,
+  so it never moves. Notes are listed newest first.
 
 Everything lives in one file, `daily.db`, in the Plugin directory. Git ignores
 it. Daily starts empty.
@@ -45,6 +47,10 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | `create_entry` | `title`, `status`, optional `body`          | the new Entry                    |
 | `update_entry` | `id`, and any of `title`, `body`, `status`  | the Entry as it now is           |
 | `delete_entry` | `id`                                        | the Entry that is gone           |
+| `list_notes`   | none                                        | `{ notes }`, newest first        |
+| `create_note`  | `body`                                      | the new Note                     |
+| `update_note`  | `id`, `body`                                | the Note as it now is            |
+| `delete_note`  | `id`                                        | the Note that is gone            |
 
 Any Status may go to any other. A `body` of `null` or `""` takes the body
 away. Bodies are Markdown; the Page shows them formatted with `web/markdown.js`,
