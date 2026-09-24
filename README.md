@@ -30,6 +30,9 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 - A **Cycle** is the time from one Meeting to the next, named by the moment it
   started. A new Entry goes into the current Cycle. The first Cycle starts by
   itself the first time Daily needs one.
+- When a Cycle starts, every Entry that is `Todo` or `In Progress` moves into
+  it with its Status unchanged. It is the same Entry, not a copy. `Done`
+  Entries stay in the Cycle they were done in.
 - A **Note** is free Markdown text. It has no Status and belongs to no Cycle,
   so it never moves. Notes are listed newest first.
 
@@ -43,6 +46,7 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 
 | Tool           | Arguments                                   | Answers                          |
 | -------------- | ------------------------------------------- | -------------------------------- |
+| `start_cycle`  | none                                        | one sentence, and `{ cycle, moved, said }` |
 | `get_cycle`    | none                                        | the current Cycle and its Entries |
 | `create_entry` | `title`, `status`, optional `body`          | the new Entry                    |
 | `update_entry` | `id`, and any of `title`, `body`, `status`  | the Entry as it now is           |
@@ -51,6 +55,13 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | `create_note`  | `body`                                      | the new Note                     |
 | `update_note`  | `id`, `body`                                | the Note as it now is            |
 | `delete_note`  | `id`                                        | the Note that is gone            |
+
+`start_cycle` is the tool a Scheduler Job calls at every Meeting, under a
+Grant from Scheduler to Daily. Every call starts exactly one Cycle
+(ADR-0001), and its text is one sentence, because a Scheduler Run keeps one:
+`Started the Cycle of Tue 23 Sep 10:00 and moved 4 Entries into it.` The
+moment is on the clock of the machine Daily runs on. The Page's **Start a new
+Cycle** button calls the same tool.
 
 Any Status may go to any other. A `body` of `null` or `""` takes the body
 away. Bodies are Markdown; the Page shows them formatted with `web/markdown.js`,

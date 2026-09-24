@@ -292,6 +292,41 @@ async function act(write) {
   }
 }
 
+// --- starting a Cycle -----------------------------------------------------
+
+let noticeTimer = 0;
+
+/** A sentence that went well, shown for a little while and then let go. */
+function notice(text) {
+  const node = byId('notice');
+  node.textContent = text;
+  node.hidden = false;
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => (node.hidden = true), 8000);
+}
+
+async function startCycle() {
+  const ok = confirm(
+    'Start a new Cycle now? Every Entry that is Todo or In Progress moves into it. ' +
+      'Done Entries stay in this Cycle.',
+  );
+  if (!ok) return;
+  const button = byId('start-cycle');
+  button.disabled = true;
+  try {
+    const started = await call('start_cycle');
+    notice(started.said);
+    say(null);
+    await load();
+  } catch (fault) {
+    say(fault.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+byId('start-cycle').addEventListener('click', startCycle);
+
 // --- adding an Entry ------------------------------------------------------
 
 function chosenStatus() {

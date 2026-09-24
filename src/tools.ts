@@ -6,7 +6,7 @@
  * Every tool answers the same data twice — as text, for whoever reads it in a
  * terminal, and as structure, for the Page, which draws it.
  */
-import { currentCycle, viewOf } from './cycles.ts';
+import { currentCycle, saidOf, startCycle, viewOf } from './cycles.ts';
 import {
   checkBody,
   checkId,
@@ -45,6 +45,22 @@ export function toolsFor(store: Store): readonly Tool[] {
       description: 'The current Cycle and every Entry in it.',
       inputSchema: { type: 'object', properties: {}, required: [] },
       call: () => told(within(store, () => viewOf(store, currentCycle(store)))),
+    },
+
+    {
+      name: 'start_cycle',
+      description:
+        'Start a new Cycle, and move every Entry that is Todo or In Progress into it with its ' +
+        'Status unchanged. Done Entries stay where they are. Every call starts exactly one ' +
+        'Cycle. It answers one sentence.',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      call: () => {
+        const started = within(store, () => startCycle(store));
+        return {
+          content: [{ type: 'text', text: saidOf(started) }],
+          structuredContent: { ...started, said: saidOf(started) },
+        };
+      },
     },
 
     {
