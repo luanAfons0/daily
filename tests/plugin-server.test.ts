@@ -16,6 +16,7 @@ const TOOLS = [
   'delete_note',
   'get_cycle',
   'list_notes',
+  'start_cycle',
   'update_entry',
   'update_note',
 ];
