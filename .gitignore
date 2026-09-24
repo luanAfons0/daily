@@ -1,0 +1,11 @@
+node_modules/
+
+# An agent's worktrees.
+.claude/
+
+# The Plugin's own data. When this repository is also the Plugin directory the
+# Host runs, this is this machine's Entries and Notes, not the project's.
+daily.db
+daily.db-journal
+daily.db-wal
+daily.db-shm
