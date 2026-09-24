@@ -5,22 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Daily</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20x%3D%275%27%20y%3D%275%27%20width%3D%2722%27%20height%3D%2722%27%20rx%3D%275%27%20fill%3D%27none%27%20stroke%3D%27%232f6f62%27%20stroke-width%3D%273%27%2F%3E%3Cpath%20d%3D%27M10.5%2016.5l3.5%203.5%207.5-8%27%20fill%3D%27none%27%20stroke%3D%27%232f6f62%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20x%3D%275%27%20y%3D%275%27%20width%3D%2722%27%20height%3D%2722%27%20rx%3D%275%27%20fill%3D%27none%27%20stroke%3D%27%2316456b%27%20stroke-width%3D%273%27%2F%3E%3Cpath%20d%3D%27M10.5%2016.5l3.5%203.5%207.5-8%27%20fill%3D%27none%27%20stroke%3D%27%2316456b%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<header class="hdr">
+<header class="bar">
   <div class="brand"><span class="mark" aria-hidden="true"></span><span>Daily</span></div>
-  <!-- The current Cycle, named by the moment it started. Written by app.js. -->
-  <div class="since" id="since" aria-live="polite"></div>
+  <!-- One job per tab. app.js shows one panel at a time and keeps the chosen
+       one in the address, so a reload opens the same tab. 1, 2 and 3 choose. -->
+  <nav class="tabs" role="tablist" aria-label="Daily">
+    <button class="tab" role="tab" id="tab-cycle" data-tab="cycle" aria-controls="panel-cycle" aria-selected="true" title="Key: 1" type="button">Cycle</button>
+    <button class="tab" role="tab" id="tab-earlier" data-tab="earlier" aria-controls="panel-earlier" aria-selected="false" tabindex="-1" title="Key: 2" type="button">Earlier Cycles<span class="tab-count" id="earlier-count"></span></button>
+    <button class="tab" role="tab" id="tab-notes" data-tab="notes" aria-controls="panel-notes" aria-selected="false" tabindex="-1" title="Key: 3" type="button">Notes<span class="tab-count" id="notes-count"></span></button>
+  </nav>
 </header>
 <main class="page">
   <!-- What is wrong, when something is. Empty and invisible otherwise. -->
   <div id="banner" class="banner" role="alert" hidden></div>
 
-  <section class="sec" aria-labelledby="add-hd">
-    <h2 class="visually-hidden" id="add-hd">Add an Entry</h2>
-    <form class="card compose" id="compose" autocomplete="off">
+  <section class="panel" id="panel-cycle" role="tabpanel" aria-labelledby="tab-cycle">
+    <!-- The masthead: the current Cycle, named by the moment it started, the
+         way a log names a watch. The time and the count are written by app.js. -->
+    <div class="mast">
+      <div class="watch">
+        <h2 class="watch-label">This Cycle, since</h2>
+        <p class="watch-time" id="since" aria-live="polite"></p>
+        <p class="watch-tally" id="cycle-count"></p>
+      </div>
+      <div class="mast-acts">
+        <button class="act" id="meeting" type="button">Prepare the Meeting</button>
+      </div>
+    </div>
+    <!-- What the last Start a new Cycle did, in the sentence start_cycle said. -->
+    <p class="notice" id="notice" role="status" hidden></p>
+
+    <form class="compose" id="compose" autocomplete="off" aria-label="Add an Entry">
       <input class="input title" id="c-title" type="text" placeholder="What are you working on?" aria-label="Title" required>
       <textarea class="input body" id="c-body" rows="3" placeholder="Details, in Markdown. Optional." aria-label="Body"></textarea>
       <div class="compose-foot">
@@ -32,17 +51,7 @@
         <button class="act go" id="c-add" type="submit">Add Entry</button>
       </div>
     </form>
-  </section>
 
-  <section class="sec" aria-labelledby="cycle-hd">
-    <div class="sec-hd">
-      <h2 id="cycle-hd">This Cycle</h2>
-      <span class="sec-note" id="cycle-count"></span>
-      <button class="act push" id="copy-meeting" type="button" title="Copy the Markdown for the Meeting">Copy for the Meeting</button>
-      <button class="act" id="start-cycle" type="button">Start a new Cycle</button>
-    </div>
-    <!-- What the last Start a new Cycle did, in the sentence start_cycle said. -->
-    <p class="notice" id="notice" role="status" hidden></p>
     <!-- What is here before the page has asked. Every column after this is
          written by app.js out of what get_cycle answered. -->
     <div class="board" id="board">
@@ -50,21 +59,15 @@
     </div>
   </section>
 
-  <section class="sec" aria-labelledby="earlier-hd">
-    <div class="sec-hd">
-      <h2 id="earlier-hd">Earlier Cycles</h2>
-      <span class="sec-note">Newest first. Open one to see what was Done in it.</span>
-    </div>
+  <section class="panel" id="panel-earlier" role="tabpanel" aria-labelledby="tab-earlier" hidden>
+    <p class="panel-note">Newest first. Open one to see what was Done in it.</p>
     <!-- Written by app.js out of what list_cycles answered. -->
     <div class="earlier" id="earlier"></div>
   </section>
 
-  <section class="sec" aria-labelledby="notes-hd">
-    <div class="sec-hd">
-      <h2 id="notes-hd">Notes</h2>
-      <span class="sec-note">Kept apart from every Cycle. Newest first.</span>
-    </div>
-    <form class="card note-compose" id="note-compose" autocomplete="off">
+  <section class="panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+    <p class="panel-note">Kept apart from every Cycle. Newest first.</p>
+    <form class="note-compose" id="note-compose" autocomplete="off">
       <textarea class="input" id="n-body" rows="2" placeholder="A Note, in Markdown." aria-label="Note" required></textarea>
       <button class="act" id="n-add" type="submit">Keep Note</button>
     </form>
@@ -72,6 +75,30 @@
     <div class="notes" id="notes"></div>
   </section>
 </main>
+
+<!-- The Meeting, in one place, in the order it happens: the Cycle starts
+     first, then the Markdown is copied, because meeting_markdown reports on the
+     Cycle before the current one. It is also the confirmation for starting a
+     Cycle, so the page asks nothing else. -->
+<dialog class="meeting" id="meeting-dialog" aria-labelledby="meeting-hd">
+  <form method="dialog" class="meeting-form">
+    <div class="meeting-hd">
+      <h2 id="meeting-hd">The Meeting</h2>
+      <button class="act quiet small" value="close" type="submit" aria-label="Close">Close</button>
+    </div>
+    <p class="meeting-step"><b>1.</b> Start the Cycle for this Meeting, unless Scheduler
+      already has. <span id="meeting-since"></span> Every Entry that is Todo or In Progress
+      moves into the new Cycle; Done Entries stay where they are.</p>
+    <div class="meeting-acts">
+      <button class="act" id="start-cycle" type="button">Start a new Cycle</button>
+    </div>
+    <p class="meeting-step"><b>2.</b> Copy what you will say: Done, then Working on.</p>
+    <pre class="meeting-md" id="meeting-md"></pre>
+    <div class="meeting-acts">
+      <button class="act go" id="copy-meeting" type="button">Copy for the Meeting</button>
+    </div>
+  </form>
+</dialog>
 <script src="rpc.js"></script>
 <script src="markdown.js"></script>
 <script src="app.js"></script>

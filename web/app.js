@@ -41,14 +41,33 @@ function say(text) {
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-/** Tue 23 Sep 10:00, on this machine's clock: how a Cycle is named. */
-function moment(at) {
+/** Tue 23 Sep and 10:00, on this machine's clock: the two halves of a name. */
+function momentParts(at) {
   const when = new Date(at);
   const pad = (n) => String(n).padStart(2, '0');
-  return (
-    WEEKDAYS[when.getDay()] + ' ' + when.getDate() + ' ' + MONTHS[when.getMonth()] + ' ' +
-    pad(when.getHours()) + ':' + pad(when.getMinutes())
-  );
+  return {
+    day: WEEKDAYS[when.getDay()] + ' ' + when.getDate() + ' ' + MONTHS[when.getMonth()],
+    time: pad(when.getHours()) + ':' + pad(when.getMinutes()),
+  };
+}
+
+/** Tue 23 Sep 10:00, on this machine's clock: how a Cycle is named. */
+function moment(at) {
+  const parts = momentParts(at);
+  return parts.day + ' ' + parts.time;
+}
+
+/**
+ * How long ago a moment was, in the largest whole unit. The page reads the
+ * clock only to say this; it never starts a Cycle by it (ADR-0001).
+ */
+function ago(at) {
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(at).getTime()) / 60000));
+  const say = (n, unit) => n + ' ' + unit + (n === 1 ? '' : 's') + ' ago';
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return say(minutes, 'minute');
+  if (minutes < 60 * 24) return say(Math.floor(minutes / 60), 'hour');
+  return say(Math.floor(minutes / (60 * 24)), 'day');
 }
 
 // --- the current Cycle ----------------------------------------------------
@@ -74,13 +93,31 @@ function statusPicker(entry) {
   return picker;
 }
 
+/** The one step forward from each Status, taken with one click. */
+const NEXT = {
+  Todo: { status: 'In Progress', label: 'Start' },
+  'In Progress': { status: 'Done', label: 'Mark Done' },
+};
+
+function stepButton(entry) {
+  const next = NEXT[entry.status];
+  if (!next) return null;
+  const button = el('button', { class: 'act small step', type: 'button', text: next.label });
+  button.addEventListener('click', () =>
+    act(() => call('update_entry', { id: entry.id, status: next.status })),
+  );
+  return button;
+}
+
 function entryCard(entry) {
   const edit = el('button', { class: 'act quiet small', type: 'button', text: 'Edit' });
   const remove = el('button', { class: 'act quiet small danger', type: 'button', text: 'Delete' });
-  const card = el('article', { class: 'card entry' }, [
+  const status = STATUSES.find((known) => known.name === entry.status);
+  const card = el('article', { class: 'card entry ' + (status ? status.dot : '') }, [
     el('p', { class: 'entry-title', text: entry.title }),
     entry.body ? formatted(entry.body, 'entry-body') : null,
     el('div', { class: 'entry-foot' }, [
+      stepButton(entry),
       statusPicker(entry),
       el('span', { class: 'grow' }),
       edit,
@@ -139,12 +176,24 @@ function column(status, entries) {
 }
 
 function drawCycle(view) {
-  const since = byId('since');
-  since.replaceChildren('Cycle since ', el('b', { text: moment(view.cycle.startedAt) }));
+  const parts = momentParts(view.cycle.startedAt);
+  byId('since').replaceChildren(
+    el('time', { datetime: view.cycle.startedAt }, [
+      el('span', { class: 'watch-day', text: parts.day }),
+      el('span', { class: 'watch-clock', text: parts.time }),
+    ]),
+  );
 
   const count = view.entries.length;
-  byId('cycle-count').textContent = count === 1 ? '1 Entry' : count + ' Entries';
-  byId('board').replaceChildren(...STATUSES.map((status) => column(status, view.entries)));
+  const done = view.entries.filter((entry) => entry.status === 'Done').length;
+  byId('cycle-count').textContent =
+    (count === 1 ? '1 Entry' : count + ' Entries') + ' · ' + done + ' Done · started ' +
+    ago(view.cycle.startedAt);
+  byId('board').replaceChildren(
+    ...(count === 0
+      ? [el('p', { class: 'card empty', text: 'Nothing in this Cycle yet. Type above, or press N, to add an Entry.' })]
+      : STATUSES.map((status) => column(status, view.entries))),
+  );
 }
 
 async function load() {
@@ -190,11 +239,22 @@ async function fillEarlier(body, id) {
   }
 }
 
+/** One mark per Entry Done in a Cycle, the way a log keeps a tally. */
+function tally(done) {
+  const shown = Math.min(done, 40);
+  return el('span', {
+    class: 'tally',
+    'aria-hidden': 'true',
+    style: '--marks: ' + shown,
+  });
+}
+
 function earlierCycle(cycle) {
   const body = el('div', { class: 'earlier-body' });
   const item = el('details', { class: 'card earlier-cycle', open: opened.has(cycle.id) }, [
     el('summary', {}, [
       el('span', { class: 'earlier-name', text: moment(cycle.startedAt) }),
+      tally(cycle.counts.Done || 0),
       el('span', { class: 'earlier-counts', text: counted(cycle.counts) }),
     ]),
     body,
@@ -211,12 +271,40 @@ function earlierCycle(cycle) {
   return item;
 }
 
+/** Whether the earlier Cycles that hold no Entry are shown. */
+let showEmpty = false;
+
+function held(cycle) {
+  return STATUSES.some((status) => cycle.counts[status.name] > 0);
+}
+
 function drawEarlier(cycles) {
   const earlier = cycles.filter((cycle) => !cycle.current);
+  const kept = earlier.filter(held);
+  const empty = earlier.length - kept.length;
+  byId('earlier-count').textContent = kept.length > 0 ? String(kept.length) : '';
+
+  if (earlier.length === 0) {
+    byId('earlier').replaceChildren(el('p', { class: 'notes-empty', text: 'This is the first Cycle.' }));
+    return;
+  }
+  const shown = showEmpty ? earlier : kept;
+  const toggle = el('button', {
+    class: 'act quiet small',
+    type: 'button',
+    text: showEmpty
+      ? 'Hide the empty Cycles'
+      : 'Show ' + (empty === 1 ? '1 empty Cycle' : empty + ' empty Cycles'),
+  });
+  toggle.addEventListener('click', () => {
+    showEmpty = !showEmpty;
+    drawEarlier(cycles);
+  });
   byId('earlier').replaceChildren(
-    ...(earlier.length === 0
-      ? [el('p', { class: 'notes-empty', text: 'This is the first Cycle.' })]
-      : earlier.map(earlierCycle)),
+    ...(shown.length === 0
+      ? [el('p', { class: 'notes-empty', text: 'No earlier Cycle has an Entry in it.' })]
+      : shown.map(earlierCycle)),
+    empty > 0 ? el('p', { class: 'earlier-empty' }, [toggle]) : null,
   );
 }
 
@@ -269,6 +357,7 @@ function noteEditor(note) {
 }
 
 function drawNotes(notes) {
+  byId('notes-count').textContent = notes.length > 0 ? String(notes.length) : '';
   const list = byId('notes');
   if (notes.length === 0) {
     list.replaceChildren(el('p', { class: 'notes-empty', text: 'No Notes yet.' }));
@@ -322,19 +411,37 @@ function notice(text) {
   noticeTimer = setTimeout(() => (node.hidden = true), 8000);
 }
 
+/** The Meeting's two steps, drawn from what the Plugin Server holds now. */
+async function drawMeeting() {
+  const [view, preview] = await Promise.all([call('get_cycle'), call('meeting_markdown')]);
+  byId('meeting-since').textContent =
+    'This Cycle started ' + ago(view.cycle.startedAt) + ', ' + moment(view.cycle.startedAt) + '.';
+  byId('meeting-md').textContent = preview.markdown;
+}
+
+/** Open the Meeting: when this Cycle began, and what would be copied. */
+async function openMeeting() {
+  try {
+    await drawMeeting();
+    byId('meeting-dialog').showModal();
+    say(null);
+  } catch (fault) {
+    say(fault.message);
+  }
+}
+
+byId('meeting').addEventListener('click', openMeeting);
+
+// The dialog is the confirmation: its words say what starting a Cycle does.
 async function startCycle() {
-  const ok = confirm(
-    'Start a new Cycle now? Every Entry that is Todo or In Progress moves into it. ' +
-      'Done Entries stay in this Cycle.',
-  );
-  if (!ok) return;
   const button = byId('start-cycle');
   button.disabled = true;
   try {
     const started = await call('start_cycle');
     notice(started.said);
     say(null);
-    await load();
+    await Promise.all([load(), drawMeeting()]);
+    byId('copy-meeting').focus();
   } catch (fault) {
     say(fault.message);
   } finally {
@@ -373,7 +480,10 @@ async function copyMeeting() {
     const meeting = await call('meeting_markdown');
     // Exactly what the tool answered, byte for byte: the page adds nothing.
     await toClipboard(meeting.markdown);
-    notice('Copied the Markdown for the Meeting.');
+    byId('meeting-md').textContent = meeting.markdown;
+    button.textContent = 'Copied';
+    setTimeout(() => (button.textContent = 'Copy for the Meeting'), 2000);
+    byId('start-cycle').focus();
     say(null);
   } catch (fault) {
     say(fault.message);
@@ -412,6 +522,60 @@ async function add(event) {
 }
 
 byId('compose').addEventListener('submit', add);
+
+// --- the tabs -------------------------------------------------------------
+
+const TABS = [...document.querySelectorAll('[role="tab"]')];
+
+/** Show one tab's panel and hide the others; the address remembers it. */
+function showTab(name, focus) {
+  const known = TABS.some((tab) => tab.dataset.tab === name) ? name : 'cycle';
+  for (const tab of TABS) {
+    const chosen = tab.dataset.tab === known;
+    tab.setAttribute('aria-selected', String(chosen));
+    tab.tabIndex = chosen ? 0 : -1;
+    document.getElementById(tab.getAttribute('aria-controls')).hidden = !chosen;
+    if (chosen && focus) tab.focus();
+  }
+  history.replaceState(null, '', '#' + known);
+}
+
+for (const tab of TABS) {
+  tab.addEventListener('click', () => showTab(tab.dataset.tab));
+  // Left and right move between tabs, as a tab list does everywhere.
+  tab.addEventListener('keydown', (event) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+    if (!step) return;
+    const next = TABS[(TABS.indexOf(tab) + step + TABS.length) % TABS.length];
+    showTab(next.dataset.tab, true);
+  });
+}
+
+/** Whether a key press belongs to a field, and not to the page. */
+function typing(target) {
+  return target.closest('input, textarea, select, [contenteditable]') !== null;
+}
+
+// 1, 2 and 3 choose a tab; N starts an Entry. A field keeps its own keys, and
+// Escape leaves the field to give them back.
+document.addEventListener('keydown', (event) => {
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (byId('meeting-dialog').open) return;
+  if (typing(event.target)) {
+    if (event.key === 'Escape' && event.target.closest('#compose')) event.target.blur();
+    return;
+  }
+  const tab = { 1: 'cycle', 2: 'earlier', 3: 'notes' }[event.key];
+  if (tab) {
+    showTab(tab);
+  } else if (event.key === 'n' || event.key === 'N') {
+    event.preventDefault();
+    showTab('cycle');
+    byId('c-title').focus();
+  }
+});
+
+showTab(location.hash.slice(1));
 
 // Whatever another page added — the Popup form, or another Plugin over the
 // Tool Bus — shows here the next time this page is looked at.
