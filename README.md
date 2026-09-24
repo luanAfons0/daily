@@ -18,6 +18,9 @@ systemctl --user restart firstmate
 
 Then open the Index Page, find `daily`, and open its Plugin Page.
 
+The Plugin Page has three tabs: **Cycle**, **Earlier Cycles** and **Notes**.
+The keys 1, 2 and 3 choose one, and N starts a new Entry.
+
 It needs Node 24 or newer, for TypeScript with no build step and for
 `node:sqlite`. The Host's service `PATH` often has only an older Node, so `mcp`
 looks for one in this order: `DAILY_NODE`, `node` on `PATH`, then every Node
@@ -83,11 +86,12 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 Grant from Scheduler to Daily. Every call starts exactly one Cycle
 (ADR-0001), and its text is one sentence, because a Scheduler Run keeps one:
 `Started the Cycle of Tue 23 Sep 10:00 and moved 4 Entries into it.` The
-moment is on the clock of the machine Daily runs on. The Page's **Start a new
-Cycle** button calls the same tool.
+moment is on the clock of the machine Daily runs on. The Page's **Prepare the
+Meeting** dialog calls the same tool from its **Start a new Cycle** button,
+and that dialog is the only confirmation it asks for.
 
-`meeting_markdown` is what the Page's **Copy for the Meeting** button puts on
-the clipboard, unchanged. It has a "Done" section — the Entries Done in the
+`meeting_markdown` is what the **Copy for the Meeting** button in the same
+dialog shows and puts on the clipboard, unchanged. It has a "Done" section — the Entries Done in the
 Cycle before the current one, then those already Done in the current one — and
 a "Working on" section — the current Cycle's `In Progress` Entries, then its
 `Todo` ones. It lists titles only. Press it after the Meeting's `start_cycle`
