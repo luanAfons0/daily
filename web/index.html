@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Daily</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20x%3D%275%27%20y%3D%275%27%20width%3D%2722%27%20height%3D%2722%27%20rx%3D%275%27%20fill%3D%27none%27%20stroke%3D%27%232f6f62%27%20stroke-width%3D%273%27%2F%3E%3Cpath%20d%3D%27M10.5%2016.5l3.5%203.5%207.5-8%27%20fill%3D%27none%27%20stroke%3D%27%232f6f62%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="hdr">
+  <div class="brand"><span class="mark" aria-hidden="true"></span><span>Daily</span></div>
+  <!-- The current Cycle, named by the moment it started. Written by app.js. -->
+  <div class="since" id="since" aria-live="polite"></div>
+</header>
+<main class="page">
+  <!-- What is wrong, when something is. Empty and invisible otherwise. -->
+  <div id="banner" class="banner" role="alert" hidden></div>
+
+  <section class="sec" aria-labelledby="add-hd">
+    <h2 class="visually-hidden" id="add-hd">Add an Entry</h2>
+    <form class="card compose" id="compose" autocomplete="off">
+      <input class="input title" id="c-title" type="text" placeholder="What are you working on?" aria-label="Title" required>
+      <textarea class="input body" id="c-body" rows="3" placeholder="Details, in Markdown. Optional." aria-label="Body"></textarea>
+      <div class="compose-foot">
+        <div class="statuses" role="radiogroup" aria-label="Status">
+          <label class="pill"><input type="radio" name="c-status" value="Todo" checked><span><i class="dot todo"></i>Todo</span></label>
+          <label class="pill"><input type="radio" name="c-status" value="In Progress"><span><i class="dot doing"></i>In Progress</span></label>
+          <label class="pill"><input type="radio" name="c-status" value="Done"><span><i class="dot done"></i>Done</span></label>
+        </div>
+        <button class="act go" id="c-add" type="submit">Add Entry</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="sec" aria-labelledby="cycle-hd">
+    <div class="sec-hd">
+      <h2 id="cycle-hd">This Cycle</h2>
+      <span class="sec-note" id="cycle-count"></span>
+    </div>
+    <!-- What is here before the page has asked. Every column after this is
+         written by app.js out of what get_cycle answered. -->
+    <div class="board" id="board">
+      <p class="card empty">Asking the Plugin Server for the current Cycle.</p>
+    </div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

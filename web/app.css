@@ -1,0 +1,329 @@
+/* The Daily Plugin Page. One stylesheet, no build step, no framework and no
+   web font: the Host serves these bytes unchanged (FirstMate ADR-0008), so
+   what is here is what a browser gets.
+
+   It aims to be calm: warm paper, one quiet accent, and colour only where it
+   says something — the Status of an Entry. Every colour is a token on :root
+   and is redefined once for dark, so a rule below names a role and never a
+   hex. */
+
+:root {
+  color-scheme: light dark;
+
+  --canvas: #f6f4ef;
+  --surface: #fffefb;
+  --sunken: #efece5;
+  --ink: #23221f;
+  --muted: #6b675f;
+  --faint: #9a958b;
+  --line: #dcd7cc;
+  --line-soft: #e8e4db;
+
+  --accent: #2f6f62;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2eeea;
+  --danger: #b3412f;
+  --danger-soft: #f8e6e1;
+
+  --todo: #8a8578;
+  --doing: #c07f1a;
+  --done: #3c8a5a;
+
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #161613;
+    --surface: #1e1e1a;
+    --sunken: #121210;
+    --ink: #ebe8e1;
+    --muted: #a39e93;
+    --faint: #767165;
+    --line: #34332d;
+    --line-soft: #2a2924;
+
+    --accent: #6fb8a6;
+    --accent-ink: #10201c;
+    --accent-soft: rgba(111, 184, 166, 0.14);
+    --danger: #e98b78;
+    --danger-soft: rgba(233, 139, 120, 0.12);
+
+    --todo: #938e82;
+    --doing: #e0a444;
+    --done: #6cc08c;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: 15px/1.55 var(--sans);
+}
+
+button, input, textarea, select { font: inherit; color: inherit; }
+
+button { cursor: pointer; }
+
+button:disabled { cursor: default; opacity: 0.55; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+code, pre { font-family: var(--mono); font-size: 0.9em; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- the header ---------------------------------------------------------- */
+
+.hdr {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 24px 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 600 22px/1 var(--serif);
+  letter-spacing: 0.01em;
+}
+
+.mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--accent);
+  transform: translateY(1px);
+}
+
+.since { color: var(--muted); font-size: 14px; }
+
+.since b { color: var(--ink); font-weight: 600; }
+
+/* --- the page and its sections ------------------------------------------ */
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 12px 24px 64px;
+}
+
+.sec + .sec { margin-top: 36px; }
+
+.sec-hd {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sec-hd h2 {
+  margin: 0;
+  font: 600 18px/1.2 var(--serif);
+}
+
+.sec-note { color: var(--faint); font-size: 13px; }
+
+.push { margin-left: auto; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.card.empty {
+  margin: 0;
+  padding: 20px;
+  color: var(--muted);
+  text-align: center;
+  border-style: dashed;
+  background: transparent;
+}
+
+.banner {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+/* --- controls ------------------------------------------------------------ */
+
+.input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+textarea.input { resize: vertical; min-height: 64px; }
+
+.act {
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.act:hover:not(:disabled) { background: var(--sunken); }
+
+.act.go {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.act.go:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, black); }
+
+.act.quiet { border-color: transparent; background: transparent; color: var(--muted); }
+
+.act.quiet:hover:not(:disabled) { color: var(--ink); }
+
+.act.danger { color: var(--danger); }
+
+/* --- the Status of an Entry --------------------------------------------- */
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: 1px;
+  background: var(--todo);
+}
+
+.dot.doing { background: var(--doing); }
+
+.dot.done { background: var(--done); }
+
+.statuses { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.pill input { position: absolute; opacity: 0; pointer-events: none; }
+
+.pill span {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.pill input:checked + span {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--sunken);
+}
+
+.pill input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --- adding an Entry ----------------------------------------------------- */
+
+.compose { padding: 14px; display: grid; gap: 10px; }
+
+.compose .title {
+  border: none;
+  padding: 4px 2px;
+  font: 500 18px/1.4 var(--serif);
+  background: transparent;
+}
+
+.compose .title:focus { box-shadow: none; }
+
+.compose .body { background: var(--canvas); }
+
+.compose-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* --- the current Cycle, in three columns -------------------------------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.board > .card.empty { grid-column: 1 / -1; }
+
+.column {
+  background: var(--sunken);
+  border-radius: var(--radius);
+  padding: 10px;
+  min-height: 120px;
+}
+
+.column-hd {
+  display: flex;
+  align-items: center;
+  padding: 4px 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.column-hd .count { margin-left: auto; font-weight: 500; color: var(--faint); }
+
+.column-empty { padding: 8px 6px; color: var(--faint); font-size: 13px; }
+
+.entry {
+  padding: 10px 12px;
+  box-shadow: 0 1px 0 var(--line-soft);
+}
+
+.entry + .entry { margin-top: 8px; }
+
+.entry-title { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+.entry-body {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 760px) {
+  .board { grid-template-columns: minmax(0, 1fr); }
+  .hdr { flex-direction: column; align-items: flex-start; gap: 6px; }
+}

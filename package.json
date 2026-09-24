@@ -1,0 +1,19 @@
+{
+  "name": "daily",
+  "version": "0.1.0",
+  "description": "A FirstMate Plugin that keeps what you work on from one Meeting to the next.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  }
+}
