@@ -48,6 +48,12 @@ const STEPS: readonly string[] = [
   `
   ALTER TABLE notes ADD COLUMN title TEXT NOT NULL DEFAULT '';
   `,
+  // An Entry has a place in its column, which the person sets. Every Entry
+  // there already was keeps the order it had, oldest first.
+  `
+  ALTER TABLE entries ADD COLUMN position INTEGER NOT NULL DEFAULT 0;
+  UPDATE entries SET position = id;
+  `,
 ];
 
 /** Open `daily.db`, and bring it up to the current version. */

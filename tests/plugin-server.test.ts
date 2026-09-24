@@ -18,6 +18,7 @@ const TOOLS = [
   'list_cycles',
   'list_notes',
   'meeting_markdown',
+  'move_entry',
   'start_cycle',
   'update_entry',
   'update_note',

@@ -479,6 +479,16 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 
 .entry.dragging { opacity: 0.4; }
 
+/* Where a dragged Entry would land: a line in the accent, between two cards. */
+.drop-line {
+  height: 3px;
+  margin: 2.5px 0;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.column .drop-line:last-child { margin: 8px 0 0; }
+
 .column { border-radius: var(--radius); transition: background-color 120ms ease; }
 
 .column.drop { background: color-mix(in srgb, var(--todo) 12%, transparent); }
@@ -618,50 +628,139 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 
 .earlier-empty { margin: 10px 0 0; }
 
-/* --- the Meeting: copy, then start the next Cycle ----------------------- */
+/* --- the presentation: one Entry at a time, for the Meeting ------------- */
 
-.meeting {
-  width: min(640px, calc(100vw - 32px));
-  max-height: calc(100vh - 64px);
+/* The stage fills the window, so the Entry is what the room looks at. */
+.stage {
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
   padding: 0;
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--accent);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: 0 20px 50px color-mix(in srgb, var(--ink) 25%, transparent);
-}
-
-.meeting::backdrop { background: color-mix(in srgb, var(--canvas) 70%, transparent); }
-
-.meeting-form { display: grid; gap: 12px; padding: 18px 20px 20px; }
-
-.meeting-hd { display: flex; align-items: center; justify-content: space-between; }
-
-.meeting-hd h2 {
-  margin: 0;
-  font: 600 18px/1 var(--display);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.meeting-step { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
-
-.meeting-step b { color: var(--ink); font-family: var(--display); }
-
-.meeting-md {
-  margin: 0;
-  max-height: 40vh;
-  padding: 12px 14px;
-  overflow: auto;
-  border-radius: 4px;
+  border: none;
   background: var(--canvas);
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+  color: var(--ink);
 }
 
-.meeting-acts { display: flex; justify-content: flex-end; }
+.stage[open] { display: grid; grid-template-rows: auto 1fr auto; }
+
+.stage::backdrop { background: var(--canvas); }
+
+.stage-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.stage-hd {
+  margin: 0;
+  font: 600 14px/1 var(--display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stage .stage-statuses { padding: 0; }
+
+.stage-count {
+  margin-left: auto;
+  font: 600 14px/1 var(--display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.stage-bar .quick-close { margin-left: 0; }
+
+.stage-slide {
+  overflow: auto;
+  padding: clamp(24px, 6vh, 72px) 24px;
+}
+
+.slide { width: min(880px, 100%); margin: 0 auto; }
+
+/* Where this Entry stands: its Status, and how far through that Status. */
+.slide-where {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  font: 600 14px/1 var(--display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.slide-where .ring { width: 16px; height: 16px; }
+
+/* The title, in the condensed face of the Cycle's own heading. */
+.slide-title {
+  margin: 0 0 28px;
+  font: 600 clamp(34px, 5.5vw, 64px)/1.02 var(--display);
+  font-stretch: 85%;
+  letter-spacing: -0.005em;
+  overflow-wrap: anywhere;
+}
+
+.slide-body { font-size: clamp(17px, 1.6vw, 21px); line-height: 1.6; }
+
+.slide-body li + li { margin-top: 0.3em; }
+
+.slide-none, .slide-empty { margin: 0; color: var(--faint); font-size: 18px; }
+
+.slide-empty { text-align: center; padding-top: 12vh; }
+
+/* A slide comes in from the side it was asked for, briefly. */
+.slide.from-right { animation: slide-in-right 180ms ease-out; }
+
+.slide.from-left { animation: slide-in-left 180ms ease-out; }
+
+@keyframes slide-in-right { from { opacity: 0; transform: translateX(24px); } }
+
+@keyframes slide-in-left { from { opacity: 0; transform: translateX(-24px); } }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--line);
+}
+
+/* The tape: one upright mark per Entry, in its Status colour, like the tally
+   of a Cycle. The current one stands taller; any one can be clicked. */
+.tape {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  min-height: 28px;
+}
+
+.mark-tick {
+  width: 10px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: var(--todo);
+  opacity: 0.45;
+  transition: height 120ms ease, opacity 120ms ease;
+}
+
+.mark-tick.doing { background: var(--doing); }
+
+.mark-tick.done { background: var(--done); }
+
+.mark-tick:hover { opacity: 0.8; }
+
+.mark-tick[aria-current] { height: 26px; opacity: 1; }
 
 /* --- asking before a delete ------------------------------------------- */
 
@@ -675,6 +774,9 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
   color: var(--ink);
   box-shadow: 0 20px 50px color-mix(in srgb, var(--ink) 25%, transparent);
 }
+
+/* A question that loses nothing is asked in the accent, not in red. */
+.ask.calm { border-top-color: var(--accent); }
 
 .ask::backdrop { background: color-mix(in srgb, var(--canvas) 70%, transparent); }
 
@@ -831,7 +933,7 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; }
 }
 
 /* --- the Popup form (new.html) ------------------------------------------ */

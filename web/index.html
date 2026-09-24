@@ -33,7 +33,10 @@
         <p class="watch-tally" id="cycle-count"></p>
       </div>
       <div class="mast-acts">
-        <button class="act" id="meeting" type="button">Prepare the Meeting</button>
+        <!-- Scheduler starts a Cycle at every Meeting; this is for the day it
+             must be done by hand, so it stays quiet and asks first. -->
+        <button class="act quiet" id="start-cycle" type="button">Start a new Cycle</button>
+        <button class="act go" id="present" type="button">Start presentation</button>
       </div>
     </div>
     <!-- What the last Start a new Cycle did, in the sentence start_cycle said. -->
@@ -81,28 +84,27 @@
   </section>
 </main>
 
-<!-- The Meeting, in one place, in the order it happens: the Cycle starts
-     first, then the Markdown is copied, because meeting_markdown reports on the
-     Cycle before the current one. It is also the confirmation for starting a
-     Cycle, so the page asks nothing else. -->
-<dialog class="meeting" id="meeting-dialog" aria-labelledby="meeting-hd">
-  <form method="dialog" class="meeting-form">
-    <div class="meeting-hd">
-      <h2 id="meeting-hd">The Meeting</h2>
-      <button class="act quiet small" value="close" type="submit" aria-label="Close">Close</button>
+<!-- The presentation: one Entry at a time, full window, for the Meeting.
+     It shows what the Meeting reports — Done, then In Progress, then Todo —
+     for the Statuses chosen at the top. app.js draws the slide and the tape. -->
+<dialog class="stage" id="stage" aria-labelledby="stage-hd">
+  <div class="stage-bar">
+    <h2 class="stage-hd" id="stage-hd">The Meeting</h2>
+    <div class="chips stage-statuses" role="group" aria-label="Statuses to present">
+      <label class="chip"><input type="checkbox" name="present" value="Done" checked><span><i class="ring done"></i>Done</span></label>
+      <label class="chip"><input type="checkbox" name="present" value="In Progress" checked><span><i class="ring doing"></i>In Progress</span></label>
+      <label class="chip"><input type="checkbox" name="present" value="Todo"><span><i class="ring todo"></i>Todo</span></label>
     </div>
-    <p class="meeting-step"><b>1.</b> Start the Cycle for this Meeting, unless Scheduler
-      already has. <span id="meeting-since"></span> Every Entry that is Todo or In Progress
-      moves into the new Cycle; Done Entries stay where they are.</p>
-    <div class="meeting-acts">
-      <button class="act" id="start-cycle" type="button">Start a new Cycle</button>
-    </div>
-    <p class="meeting-step"><b>2.</b> Copy what you will say: Done, then Working on.</p>
-    <pre class="meeting-md" id="meeting-md"></pre>
-    <div class="meeting-acts">
-      <button class="act go" id="copy-meeting" type="button">Copy for the Meeting</button>
-    </div>
-  </form>
+    <span class="stage-count" id="stage-count"></span>
+    <button class="quick-close" id="stage-close" type="button" aria-label="Close" title="Close (Esc)"></button>
+  </div>
+  <div class="stage-slide" id="stage-slide" aria-live="polite"></div>
+  <div class="stage-foot">
+    <button class="act" id="stage-prev" type="button" title="Previous (←)">← Previous</button>
+    <!-- One mark per Entry, in its Status colour; the current one stands up. -->
+    <div class="tape" id="stage-tape" role="group" aria-label="Go to an Entry"></div>
+    <button class="act go" id="stage-next" type="button" title="Next (→)">Next →</button>
+  </div>
 </dialog>
 <!-- The one question the Page asks before a delete, in its own words and
      styles rather than the browser's confirm box. app.js fills it for each

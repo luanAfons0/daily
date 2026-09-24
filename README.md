@@ -20,7 +20,8 @@ Then open the Index Page, find `daily`, and open its Plugin Page.
 
 The Plugin Page has three tabs: **Cycle**, **Earlier Cycles** and **Notes**.
 The keys 1, 2 and 3 choose one, and N starts a new Entry.
-Drag an Entry to another column to give it that Status. In a Note, Shift+Enter
+Drag an Entry to another column to give it that Status, or up and down to set
+its place in the column; the Meeting lists each section in that order. In a Note, Shift+Enter
 saves it.
 
 It needs Node 24 or newer, for TypeScript with no build step and for
@@ -77,6 +78,7 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | `list_cycles`  | none                                        | `{ cycles }`, newest first, each with counts by Status |
 | `create_entry` | `title`, `status`, optional `body`          | the new Entry                    |
 | `update_entry` | `id`, and any of `title`, `body`, `status`  | the Entry as it now is           |
+| `move_entry`   | `id`, and `status`, `before` (optional)     | the Entry in its new place       |
 | `delete_entry` | `id`                                        | the Entry that is gone           |
 | `meeting_markdown` | none                                    | the Markdown, and `{ markdown, done, workingOn }` |
 | `list_notes`   | none                                        | `{ notes }`, newest first        |
@@ -88,15 +90,16 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 Grant from Scheduler to Daily. Every call starts exactly one Cycle
 (ADR-0001), and its text is one sentence, because a Scheduler Run keeps one:
 `Started the Cycle of Tue 23 Sep 10:00 and moved 4 Entries into it.` The
-moment is on the clock of the machine Daily runs on. The Page's **Prepare the
-Meeting** dialog calls the same tool from its **Start a new Cycle** button,
-and that dialog is the only confirmation it asks for.
+moment is on the clock of the machine Daily runs on. The Page's **Start a new
+Cycle** button calls the same tool, after one question, for the day Scheduler
+did not.
 
-`meeting_markdown` is what the **Copy for the Meeting** button in the same
-dialog shows and puts on the clipboard, unchanged. It has a "Done" section — the Entries Done in the
-Cycle before the current one, then those already Done in the current one — and
-a "Working on" section — the current Cycle's `In Progress` Entries, then its
-`Todo` ones. It lists titles only. Press it after the Meeting's `start_cycle`
+`meeting_markdown` decides what the Page's **Start presentation** shows: one
+Entry at a time, full window, for the Statuses chosen at the top. It has a
+"Done" section — the Entries Done in the Cycle before the current one, then
+those already Done in the current one — and a "Working on" section — the
+current Cycle's `In Progress` Entries, then its `Todo` ones, each in the order
+of its column. It lists titles only. Present after the Meeting's `start_cycle`
 has run; before, "Done" also holds what was reported last time.
 
 Any Status may go to any other. A `body` of `null` or `""` takes the body

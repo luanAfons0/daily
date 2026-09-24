@@ -21,6 +21,7 @@ import {
   checkTitle,
   createEntry,
   deleteEntry,
+  moveEntry,
   STATUSES,
   updateEntry,
   type EntryChange,
@@ -51,6 +52,15 @@ const NOTE_BODY = { type: 'string', description: 'The text of the Note, as Markd
 const STATUS = { type: 'string', enum: STATUSES, description: 'Where the Entry stands.' };
 
 /** The tools, over one open Store. */
+/** Where move_entry puts an Entry: above this id, or null for the end. */
+function checkBefore(given: unknown): number | null {
+  if (given === undefined || given === null) return null;
+  if (typeof given === 'number' && Number.isSafeInteger(given) && given > 0) return given;
+  throw badInput(
+    'move_entry needs "before" as the id of the Entry to go above, or left out for the end.',
+  );
+}
+
 export function toolsFor(store: Store): readonly Tool[] {
   return [
     {
@@ -135,6 +145,38 @@ export function toolsFor(store: Store): readonly Tool[] {
         }
         return told(
           within(store, () => updateEntry(store, id, change, () => currentCycle(store).id)),
+        );
+      },
+    },
+
+    {
+      name: 'move_entry',
+      description:
+        'Give one Entry a place in its column: above the Entry named by "before", or at the ' +
+        'end when "before" is left out. With a Status, it first moves into that column, as ' +
+        'update_entry would.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: ID,
+          status: STATUS,
+          before: {
+            type: 'integer',
+            description: 'The id of the Entry to go above, in the same column. Optional.',
+          },
+        },
+        required: ['id'],
+      },
+      call: (given) => {
+        const id = checkId('move_entry', given['id']);
+        const status =
+          given['status'] === undefined ? undefined : checkStatus('move_entry', given['status']);
+        const before = checkBefore(given['before']);
+        if (before === id) throw badInput('move_entry cannot put an Entry above itself.');
+        return told(
+          within(store, () =>
+            moveEntry(store, id, { status, before }, () => currentCycle(store).id),
+          ),
         );
       },
     },

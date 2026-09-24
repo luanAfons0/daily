@@ -49,6 +49,11 @@ function ask(question) {
   byId('confirm-quote').hidden = !question.quote;
   byId('confirm-text').textContent = question.text;
   byId('confirm-yes').textContent = question.yes;
+  // A delete is red; a question that loses nothing, such as starting a
+  // Cycle, is asked in the accent instead.
+  const calm = question.tone === 'calm';
+  dialog.classList.toggle('calm', calm);
+  byId('confirm-yes').className = 'act ' + (calm ? 'go' : 'danger-go');
   dialog.returnValue = '';
   dialog.showModal();
   byId('confirm-keep').focus();
@@ -171,11 +176,13 @@ function entryEditor(entry) {
   title.value = entry.title;
   const body = el('textarea', { class: 'input', rows: '4', 'aria-label': 'Body' });
   body.value = entry.body || '';
+  sendOnShiftEnter(title);
+  sendOnShiftEnter(body);
   const form = el('form', { class: 'card entry editing' }, [
     title,
     body,
     el('div', { class: 'entry-foot' }, [
-      el('span', { class: 'hint', text: 'Markdown. Esc to cancel.' }),
+      el('span', { class: 'hint', text: 'Markdown. Shift+Enter saves, Esc cancels.' }),
       el('span', { class: 'grow' }),
       el('button', { class: 'act quiet small', type: 'button', text: 'Cancel', 'data-cancel': '' }),
       el('button', { class: 'act go small', type: 'submit', text: 'Save' }),
@@ -203,6 +210,7 @@ let dragged = null;
 function draggableCard(entry) {
   const card = entryCard(entry);
   card.draggable = true;
+  card.dataset.id = String(entry.id);
   card.addEventListener('dragstart', (event) => {
     dragged = entry;
     event.dataTransfer.effectAllowed = 'move';
@@ -213,29 +221,64 @@ function draggableCard(entry) {
     dragged = null;
     card.classList.remove('dragging');
     for (const column of document.querySelectorAll('.column.drop')) column.classList.remove('drop');
+    dropLine.remove();
   });
   return card;
 }
 
-/** Let a column take an Entry dropped on it, and give it that column's Status. */
+/** The line that shows where a dragged Entry would land. */
+const dropLine = el('div', { class: 'drop-line', 'aria-hidden': 'true' });
+
+/**
+ * The card a dragged Entry would go above, from how far down the column the
+ * pointer is: the first card whose middle is below it, or null for the end.
+ */
+function cardBelow(node, y) {
+  const cards = [...node.querySelectorAll('.entry:not(.dragging)')];
+  return cards.find((card) => {
+    const box = card.getBoundingClientRect();
+    return y < box.top + box.height / 2;
+  }) || null;
+}
+
+/**
+ * Let a column take an Entry dropped on it: from another column, which gives
+ * it that Status, or from this one, which only changes its place. It lands
+ * above the card under the pointer, or at the end.
+ */
 function dropTarget(node, status) {
   const welcome = (event) => {
-    if (!dragged || dragged.status === status.name) return;
+    if (!dragged) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     node.classList.add('drop');
+    const below = cardBelow(node, event.clientY);
+    if (below) below.before(dropLine);
+    else node.append(dropLine);
   };
   node.addEventListener('dragenter', welcome);
   node.addEventListener('dragover', welcome);
   node.addEventListener('dragleave', (event) => {
-    if (!node.contains(event.relatedTarget)) node.classList.remove('drop');
+    if (node.contains(event.relatedTarget)) return;
+    node.classList.remove('drop');
+    dropLine.remove();
   });
   node.addEventListener('drop', (event) => {
     event.preventDefault();
     node.classList.remove('drop');
     const entry = dragged;
-    if (!entry || entry.status === status.name) return;
-    void act(() => call('update_entry', { id: entry.id, status: status.name }));
+    const below = cardBelow(node, event.clientY);
+    dropLine.remove();
+    if (!entry) return;
+    const before = below ? Number(below.dataset.id) : null;
+    // Dropped back where it was: nothing to write.
+    const next = [...node.querySelectorAll('.entry')].find(
+      (card, index, all) => all[index - 1] && Number(all[index - 1].dataset.id) === entry.id,
+    );
+    const stays = entry.status === status.name &&
+      (before === (next ? Number(next.dataset.id) : null) || before === entry.id);
+    if (stays) return;
+    void act(() => call('move_entry', { id: entry.id, status: status.name, before }));
   });
   return node;
 }
@@ -415,7 +458,7 @@ function noteCard(note) {
   return card;
 }
 
-/** Shift+Enter in a Note's body sends its form; Enter alone is a new line. */
+/** Shift+Enter in a field sends its form; in a body, Enter alone is a new line. */
 function sendOnShiftEnter(body) {
   body.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' || !event.shiftKey || event.isComposing) return;
@@ -534,6 +577,7 @@ async function keepNote(event) {
 }
 
 byId('note-compose').addEventListener('submit', keepNote);
+sendOnShiftEnter(byId('c-body'));
 sendOnShiftEnter(byId('n-title'));
 sendOnShiftEnter(byId('n-body'));
 
@@ -570,37 +614,27 @@ function notice(text) {
   noticeTimer = setTimeout(() => (node.hidden = true), 8000);
 }
 
-/** The Meeting's two steps, drawn from what the Plugin Server holds now. */
-async function drawMeeting() {
-  const [view, preview] = await Promise.all([call('get_cycle'), call('meeting_markdown')]);
-  byId('meeting-since').textContent =
-    'This Cycle started ' + ago(view.cycle.startedAt) + ', ' + moment(view.cycle.startedAt) + '.';
-  byId('meeting-md').textContent = preview.markdown;
-}
-
-/** Open the Meeting: when this Cycle began, and what would be copied. */
-async function openMeeting() {
-  try {
-    await drawMeeting();
-    byId('meeting-dialog').showModal();
-    say(null);
-  } catch (fault) {
-    say(fault.message);
-  }
-}
-
-byId('meeting').addEventListener('click', openMeeting);
-
-// The dialog is the confirmation: its words say what starting a Cycle does.
+/**
+ * Start a new Cycle by hand. Scheduler does this at every Meeting, so this is
+ * for the day it did not; the question says what starting one does.
+ */
 async function startCycle() {
+  const yes = await ask({
+    title: 'Start a new Cycle?',
+    text:
+      'Every Entry that is Todo or In Progress moves into the new Cycle. Done Entries stay ' +
+      'in this one. Scheduler also starts one at every Meeting.',
+    yes: 'Start a new Cycle',
+    tone: 'calm',
+  });
+  if (!yes) return;
   const button = byId('start-cycle');
   button.disabled = true;
   try {
     const started = await call('start_cycle');
     notice(started.said);
     say(null);
-    await Promise.all([load(), drawMeeting()]);
-    byId('copy-meeting').focus();
+    await load();
   } catch (fault) {
     say(fault.message);
   } finally {
@@ -610,39 +644,125 @@ async function startCycle() {
 
 byId('start-cycle').addEventListener('click', startCycle);
 
-// --- copying the Markdown for the Meeting -------------------------------
+// --- the presentation -------------------------------------------------------
 
-/**
- * Put text on the clipboard. The Clipboard API is there on the Host's own
- * address, which a browser counts as secure; the older copy command is the
- * fallback for a window that refuses it.
- */
-async function toClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return;
-  } catch {
-    const scratch = el('textarea', { class: 'visually-hidden', 'aria-hidden': 'true' });
-    scratch.value = text;
-    document.body.append(scratch);
-    scratch.select();
-    const copied = document.execCommand('copy');
-    scratch.remove();
-    if (!copied) throw new Error('This window would not let the page use the clipboard.');
-  }
+/** The order the Meeting goes in: what was Done, then what is being worked on. */
+const PRESENTED = ['Done', 'In Progress', 'Todo'];
+
+/** Each Status's Entries for this Meeting, once asked for. */
+let pool = null;
+/** The slides for the Statuses chosen, and the one on the stage. */
+let deck = [];
+let at = 0;
+
+/** The Statuses ticked at the top of the stage. */
+function chosenToPresent() {
+  return [...document.querySelectorAll('input[name="present"]:checked')].map((box) => box.value);
 }
 
-async function copyMeeting() {
-  const button = byId('copy-meeting');
+/**
+ * Ask what the Meeting reports. meeting_markdown decides which Entries are
+ * Done and which are being worked on, so its rules stay in one place; the
+ * Cycles give their titles and details. Done may reach into the Cycle before
+ * this one, so that one is read too.
+ */
+async function meetingPool() {
+  const [meeting, current, cycles] = await Promise.all([
+    call('meeting_markdown'),
+    call('get_cycle'),
+    call('list_cycles'),
+  ]);
+  const previous = cycles.cycles.find((cycle) => !cycle.current);
+  const before = previous ? await call('get_cycle', { id: previous.id }) : { entries: [] };
+  const known = new Map([...before.entries, ...current.entries].map((entry) => [entry.id, entry]));
+  const working = meeting.workingOn.map((id) => known.get(id)).filter(Boolean);
+  return {
+    Done: meeting.done.map((id) => known.get(id)).filter(Boolean),
+    'In Progress': working.filter((entry) => entry.status === 'In Progress'),
+    Todo: working.filter((entry) => entry.status === 'Todo'),
+  };
+}
+
+/** Build the slides for the Statuses chosen, and stay on the same Entry if it is kept. */
+function buildDeck() {
+  const showing = deck[at] ? deck[at].entry.id : null;
+  const chosen = chosenToPresent();
+  deck = PRESENTED.filter((name) => chosen.includes(name)).flatMap((name) =>
+    pool[name].map((entry, index) => ({ entry, status: name, index, of: pool[name].length })),
+  );
+  const kept = deck.findIndex((slide) => slide.entry.id === showing);
+  at = kept === -1 ? 0 : kept;
+}
+
+/** The class a Status is drawn with, on rings, stripes and marks. */
+function dotOf(name) {
+  return STATUSES.find((status) => status.name === name).dot;
+}
+
+/** Draw the slide on the stage, the count and the tape. */
+function drawStage(direction) {
+  const slide = byId('stage-slide');
+  byId('stage-prev').disabled = at <= 0;
+  byId('stage-next').disabled = at >= deck.length - 1;
+
+  if (deck.length === 0) {
+    byId('stage-count').textContent = '';
+    byId('stage-tape').replaceChildren();
+    slide.replaceChildren(
+      el('p', { class: 'slide-empty', text: 'Nothing to present. Choose a Status above.' }),
+    );
+    return;
+  }
+
+  const { entry, status, index, of } = deck[at];
+  byId('stage-count').textContent = at + 1 + ' / ' + deck.length;
+  slide.replaceChildren(
+    el('div', { class: 'slide ' + (direction ? 'from-' + direction : '') }, [
+      el('p', { class: 'slide-where' }, [
+        el('i', { class: 'ring ' + dotOf(status) }),
+        status + ' · ' + (index + 1) + ' of ' + of,
+      ]),
+      el('h3', { class: 'slide-title', text: entry.title }),
+      entry.body
+        ? formatted(entry.body, 'slide-body')
+        : el('p', { class: 'slide-none', text: 'No details.' }),
+    ]),
+  );
+  byId('stage-tape').replaceChildren(
+    ...deck.map((item, i) => {
+      const mark = el('button', {
+        class: 'mark-tick ' + dotOf(item.status),
+        type: 'button',
+        title: item.entry.title,
+        'aria-label': item.status + ': ' + item.entry.title,
+        'aria-current': i === at ? 'step' : null,
+      });
+      mark.addEventListener('click', () => go(i));
+      return mark;
+    }),
+  );
+}
+
+/** Go to one slide, by its place in the deck. */
+function go(to) {
+  const next = Math.max(0, Math.min(deck.length - 1, to));
+  if (next === at) return;
+  const direction = next > at ? 'right' : 'left';
+  at = next;
+  drawStage(direction);
+}
+
+async function present() {
+  const button = byId('present');
   button.disabled = true;
   try {
-    const meeting = await call('meeting_markdown');
-    // Exactly what the tool answered, byte for byte: the page adds nothing.
-    await toClipboard(meeting.markdown);
-    byId('meeting-md').textContent = meeting.markdown;
-    button.textContent = 'Copied';
-    setTimeout(() => (button.textContent = 'Copy for the Meeting'), 2000);
-    byId('start-cycle').focus();
+    pool = await meetingPool();
+    deck = [];
+    at = 0;
+    buildDeck();
+    drawStage(null);
+    byId('stage').showModal();
+    byId('stage-next').focus();
     say(null);
   } catch (fault) {
     say(fault.message);
@@ -651,7 +771,37 @@ async function copyMeeting() {
   }
 }
 
-byId('copy-meeting').addEventListener('click', copyMeeting);
+byId('present').addEventListener('click', present);
+byId('stage-prev').addEventListener('click', () => go(at - 1));
+byId('stage-next').addEventListener('click', () => go(at + 1));
+byId('stage-close').addEventListener('click', () => byId('stage').close());
+
+for (const box of document.querySelectorAll('input[name="present"]')) {
+  box.addEventListener('change', () => {
+    buildDeck();
+    drawStage(null);
+  });
+}
+
+// The arrows, Space, Page Up and Down, Home and End move through the slides;
+// Esc closes the stage, as it closes every dialog. The keys are heard on the
+// whole document, because Next is disabled on the last slide and a disabled
+// button lets the focus fall out of the stage.
+document.addEventListener('keydown', (event) => {
+  if (!byId('stage').open || event.target.closest('input')) return;
+  const moves = {
+    ArrowRight: at + 1,
+    ArrowLeft: at - 1,
+    ' ': at + 1,
+    PageDown: at + 1,
+    PageUp: at - 1,
+    Home: 0,
+    End: deck.length - 1,
+  };
+  if (!(event.key in moves)) return;
+  event.preventDefault();
+  go(moves[event.key]);
+});
 
 // --- adding an Entry ------------------------------------------------------
 
@@ -766,10 +916,27 @@ document.addEventListener('keydown', (event) => {
 
 showTab(location.hash.slice(1));
 
+/**
+ * Draw the page again from the Plugin Server, unless an Entry or a Note is
+ * open in an editor: a redraw would throw away what is being typed, and the
+ * editor draws the page again itself when it saves or cancels.
+ */
+function refresh() {
+  if (document.querySelector('.editing')) return;
+  void load();
+}
+
 // Whatever another page added — the Popup form, or another Plugin over the
 // Tool Bus — shows here the next time this page is looked at.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') void load();
+  if (document.visibilityState === 'visible') refresh();
 });
+
+// The Popup is a second window over this one, so this page stays visible and
+// never hears the change above. The Popup says what it saved on a channel the
+// two pages share, and this page draws it at once. Getting the focus back is
+// the same news, for a window where the channel does not reach.
+new BroadcastChannel('daily').addEventListener('message', refresh);
+window.addEventListener('focus', refresh);
 
 void load();
