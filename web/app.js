@@ -194,13 +194,75 @@ function drawCycle(view) {
 
 async function load() {
   try {
-    const [view, listed] = await Promise.all([call('get_cycle'), call('list_notes')]);
+    const [view, cycles, listed] = await Promise.all([
+      call('get_cycle'),
+      call('list_cycles'),
+      call('list_notes'),
+    ]);
     drawCycle(view);
+    drawEarlier(cycles.cycles);
     drawNotes(listed.notes);
     say(null);
   } catch (fault) {
     say(fault.message);
   }
+}
+
+// --- the earlier Cycles --------------------------------------------------
+
+/** The earlier Cycles a person has opened, so a redraw leaves them open. */
+const opened = new Set();
+
+function counted(counts) {
+  const parts = [];
+  for (const status of STATUSES) {
+    const n = counts[status.name];
+    if (n > 0) parts.push(n + ' ' + status.name);
+  }
+  return parts.length === 0 ? 'nothing recorded' : parts.join(' · ');
+}
+
+async function fillEarlier(body, id) {
+  try {
+    const view = await call('get_cycle', { id: id });
+    body.replaceChildren(
+      ...(view.entries.length === 0
+        ? [el('p', { class: 'column-empty', text: 'Nothing was Done in this Cycle.' })]
+        : view.entries.map(entryCard)),
+    );
+  } catch (fault) {
+    say(fault.message);
+  }
+}
+
+function earlierCycle(cycle) {
+  const body = el('div', { class: 'earlier-body' });
+  const item = el('details', { class: 'card earlier-cycle', open: opened.has(cycle.id) }, [
+    el('summary', {}, [
+      el('span', { class: 'earlier-name', text: moment(cycle.startedAt) }),
+      el('span', { class: 'earlier-counts', text: counted(cycle.counts) }),
+    ]),
+    body,
+  ]);
+  item.addEventListener('toggle', () => {
+    if (item.open) {
+      opened.add(cycle.id);
+      void fillEarlier(body, cycle.id);
+    } else {
+      opened.delete(cycle.id);
+    }
+  });
+  if (opened.has(cycle.id)) void fillEarlier(body, cycle.id);
+  return item;
+}
+
+function drawEarlier(cycles) {
+  const earlier = cycles.filter((cycle) => !cycle.current);
+  byId('earlier').replaceChildren(
+    ...(earlier.length === 0
+      ? [el('p', { class: 'notes-empty', text: 'This is the first Cycle.' })]
+      : earlier.map(earlierCycle)),
+  );
 }
 
 // --- the Notes ------------------------------------------------------------

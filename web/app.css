@@ -365,6 +365,48 @@ textarea.input { resize: vertical; min-height: 64px; }
 
 .entry.editing .entry-foot { margin-top: 0; }
 
+/* --- the earlier Cycles ------------------------------------------------- */
+
+.earlier { display: grid; gap: 8px; }
+
+.earlier-cycle summary {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.earlier-cycle summary::-webkit-details-marker { display: none; }
+
+.earlier-cycle summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--faint);
+  border-bottom: 1.5px solid var(--faint);
+  transform: translateY(-2px) rotate(-45deg);
+  transition: transform 120ms ease;
+}
+
+.earlier-cycle[open] summary::before { transform: translateY(-3px) rotate(45deg); }
+
+.earlier-name { font-weight: 600; }
+
+.earlier-counts { margin-left: auto; color: var(--faint); font-size: 13px; }
+
+.earlier-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.earlier-body .entry + .entry { margin-top: 0; }
+
+.earlier-body .entry { background: var(--canvas); }
+
 /* --- the Notes ---------------------------------------------------------- */
 
 .note-compose {

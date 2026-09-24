@@ -6,7 +6,8 @@
  * first starts by itself the first time anything needs it, so a fresh Plugin
  * directory works at once.
  */
-import { entriesIn, type Entry } from './entries.ts';
+import { entriesIn, type Entry, type Status } from './entries.ts';
+import { badInput } from './mcp.ts';
 import { now, type Store } from './store.ts';
 
 /** One Cycle, as the Store keeps it. */
@@ -45,6 +46,42 @@ export function addCycle(store: Store): Cycle {
   const startedAt = now();
   const done = store.prepare('INSERT INTO cycles (started_at) VALUES (?)').run(startedAt);
   return { id: Number(done.lastInsertRowid), startedAt };
+}
+
+/** One Cycle by its id, or a sentence that says there is none. */
+export function cycleById(store: Store, id: number): Cycle {
+  const row = store.prepare('SELECT id, started_at FROM cycles WHERE id = ?').get(id) as
+    | CycleRow
+    | undefined;
+  if (row === undefined) throw badInput(`No Cycle has the id ${id}. list_cycles names them all.`);
+  return cycleOf(row);
+}
+
+/** One Cycle in the list: its name, and how many of its Entries stand where. */
+export type CycleSummary = Cycle & {
+  readonly current: boolean;
+  readonly counts: { readonly [status in Status]: number };
+};
+
+/** Every Cycle there ever was, newest first, with its Entries counted by Status. */
+export function listCycles(store: Store): CycleSummary[] {
+  const current = currentCycle(store);
+  const rows = store
+    .prepare(
+      `SELECT c.id, c.started_at,
+              SUM(e.status = 'Todo') AS todo,
+              SUM(e.status = 'In Progress') AS doing,
+              SUM(e.status = 'Done') AS done
+         FROM cycles c LEFT JOIN entries e ON e.cycle_id = c.id
+        GROUP BY c.id
+        ORDER BY c.id DESC`,
+    )
+    .all() as (CycleRow & { todo: number | null; doing: number | null; done: number | null })[];
+  return rows.map((row) => ({
+    ...cycleOf(row),
+    current: row.id === current.id,
+    counts: { Todo: row.todo ?? 0, 'In Progress': row.doing ?? 0, Done: row.done ?? 0 },
+  }));
 }
 
 /** What starting a Cycle did: the new Cycle, and how many Entries moved into it. */
@@ -101,7 +138,7 @@ export function saidOf(started: Started): string {
   return `Started the Cycle of ${nameOf(started.cycle)} and ${moved} into it.`;
 }
 
-/** The current Cycle and its Entries. */
+/** One Cycle and its Entries, and whether it is the current one. */
 export function viewOf(store: Store, cycle: Cycle): CycleView {
   const current = currentCycle(store);
   return {
