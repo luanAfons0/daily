@@ -1,0 +1,56 @@
+# Daily
+
+Daily is a FirstMate Plugin. It keeps the things you work on between one team
+meeting and the next, and the free notes that belong to no meeting.
+
+It is a Plugin like any other, so it borrows FirstMate's words unchanged —
+Host, Plugin, Plugin Page, Plugin Server, Tool Bus, Grant, Stopped. They are
+defined once, in [`~/.first-mate/CONTEXT.md`](../.first-mate/CONTEXT.md), and
+this file never redefines one.
+
+## Language
+
+**Entry**:
+One thing you work on. It has a Status, a title and an optional body, and it
+belongs to exactly one Cycle at a time.
+_Avoid_: daily note, task, item, issue, card
+
+**Note**:
+Free text you keep. It has no Status and belongs to no Cycle, so it never
+moves.
+_Avoid_: memo, entry, daily note
+
+**Status**:
+Where an Entry stands: `Todo`, `In Progress` or `Done`. Nothing else.
+_Avoid_: state, outcome, progress
+
+**Meeting**:
+The recurring team meeting. Scheduler knows when it happens; Daily does not.
+_Avoid_: daily, standup, Team Daily
+
+**Cycle**:
+The time from one Meeting to the next. It is named by the moment it started,
+because Daily cannot know when the next Meeting will be. Every call to start a
+Cycle starts one.
+_Avoid_: day, period, sprint, Reporting Period
+
+## Relationships
+
+- An Entry that is `Todo` or `In Progress` when a new Cycle starts
+  moves into the new Cycle with its Status unchanged. It is one Entry; nothing
+  is copied, and the old Cycle no longer shows it.
+- An Entry that is `Done` stays in the Cycle it was in.
+- An Entry that is not `Done` is always in the current Cycle. A `Done` Entry in
+  an earlier Cycle that is set back to `Todo` or `In Progress` moves into the
+  current Cycle at once.
+- A new Entry goes into the current Cycle and nowhere else. An earlier Cycle is
+  history.
+- There is always a current Cycle. The first one starts by itself the first
+  time Daily needs one.
+- A Note never moves.
+
+## Flagged ambiguities
+
+- "Daily note" was used for an Entry. It is not a kind of Note: a Note has no
+  Status. Resolved: **Entry** and **Note**.
+- "Daily" is the meeting in everyday speech. It is not a word for an Entry.
