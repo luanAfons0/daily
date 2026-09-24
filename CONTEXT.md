@@ -21,7 +21,9 @@ moves.
 _Avoid_: memo, entry, daily note
 
 **Status**:
-Where an Entry stands: `Todo`, `In Progress` or `Done`. Nothing else.
+Where an Entry stands: `Todo`, `In Progress`, `In Review` or `Done`, in that
+order. Nothing else. `In Review` is work that is finished and waits for
+someone else to look at it.
 _Avoid_: state, outcome, progress
 
 **Meeting**:
@@ -36,13 +38,13 @@ _Avoid_: day, period, sprint, Reporting Period
 
 ## Relationships
 
-- An Entry that is `Todo` or `In Progress` when a new Cycle starts
-  moves into the new Cycle with its Status unchanged. It is one Entry; nothing
+- An Entry that is not `Done` when a new Cycle starts moves into the new
+  Cycle with its Status unchanged. It is one Entry; nothing
   is copied, and the old Cycle no longer shows it.
 - An Entry that is `Done` stays in the Cycle it was in.
 - An Entry that is not `Done` is always in the current Cycle. A `Done` Entry in
-  an earlier Cycle that is set back to `Todo` or `In Progress` moves into the
-  current Cycle at once.
+  an earlier Cycle that is set back to any other Status moves into the current
+  Cycle at once.
 - A new Entry goes into the current Cycle and nowhere else. An earlier Cycle is
   history.
 - There is always a current Cycle. The first one starts by itself the first

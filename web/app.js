@@ -4,10 +4,11 @@
    it keeps no data of its own. */
 'use strict';
 
-/** The three Statuses, in the order the columns stand. */
+/** The four Statuses, in the order the columns stand. */
 const STATUSES = [
   { name: 'Todo', dot: 'todo' },
   { name: 'In Progress', dot: 'doing' },
+  { name: 'In Review', dot: 'review' },
   { name: 'Done', dot: 'done' },
 ];
 
@@ -129,7 +130,8 @@ function statusPicker(entry) {
 /** The one step forward from each Status, taken with one click. */
 const NEXT = {
   Todo: { status: 'In Progress', label: 'Start' },
-  'In Progress': { status: 'Done', label: 'Mark Done' },
+  'In Progress': { status: 'In Review', label: 'Send to review' },
+  'In Review': { status: 'Done', label: 'Mark Done' },
 };
 
 function stepButton(entry) {
@@ -622,7 +624,7 @@ async function startCycle() {
   const yes = await ask({
     title: 'Start a new Cycle?',
     text:
-      'Every Entry that is Todo or In Progress moves into the new Cycle. Done Entries stay ' +
+      'Every Entry that is not Done moves into the new Cycle. Done Entries stay ' +
       'in this one. Scheduler also starts one at every Meeting.',
     yes: 'Start a new Cycle',
     tone: 'calm',
@@ -646,8 +648,8 @@ byId('start-cycle').addEventListener('click', startCycle);
 
 // --- the presentation -------------------------------------------------------
 
-/** The order the Meeting goes in: what was Done, then what is being worked on. */
-const PRESENTED = ['Done', 'In Progress', 'Todo'];
+/** The order the Meeting goes in: what was Done, what waits, what is being worked on. */
+const PRESENTED = ['Done', 'In Review', 'In Progress', 'Todo'];
 
 /** Each Status's Entries for this Meeting, once asked for. */
 let pool = null;
@@ -678,6 +680,7 @@ async function meetingPool() {
   const working = meeting.workingOn.map((id) => known.get(id)).filter(Boolean);
   return {
     Done: meeting.done.map((id) => known.get(id)).filter(Boolean),
+    'In Review': meeting.inReview.map((id) => known.get(id)).filter(Boolean),
     'In Progress': working.filter((entry) => entry.status === 'In Progress'),
     Todo: working.filter((entry) => entry.status === 'Todo'),
   };

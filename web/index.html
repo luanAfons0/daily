@@ -49,6 +49,7 @@
         <div class="statuses" role="radiogroup" aria-label="Status">
           <label class="pill"><input type="radio" name="c-status" value="Todo" checked><span><i class="dot todo"></i>Todo</span></label>
           <label class="pill"><input type="radio" name="c-status" value="In Progress"><span><i class="dot doing"></i>In Progress</span></label>
+          <label class="pill"><input type="radio" name="c-status" value="In Review"><span><i class="dot review"></i>In Review</span></label>
           <label class="pill"><input type="radio" name="c-status" value="Done"><span><i class="dot done"></i>Done</span></label>
         </div>
         <button class="act go" id="c-add" type="submit">Add Entry</button>
@@ -85,13 +86,14 @@
 </main>
 
 <!-- The presentation: one Entry at a time, full window, for the Meeting.
-     It shows what the Meeting reports — Done, then In Progress, then Todo —
+     It shows what the Meeting reports — Done, In Review, In Progress, Todo —
      for the Statuses chosen at the top. app.js draws the slide and the tape. -->
 <dialog class="stage" id="stage" aria-labelledby="stage-hd">
   <div class="stage-bar">
     <h2 class="stage-hd" id="stage-hd">The Meeting</h2>
     <div class="chips stage-statuses" role="group" aria-label="Statuses to present">
       <label class="chip"><input type="checkbox" name="present" value="Done" checked><span><i class="ring done"></i>Done</span></label>
+      <label class="chip"><input type="checkbox" name="present" value="In Review" checked><span><i class="ring review"></i>In Review</span></label>
       <label class="chip"><input type="checkbox" name="present" value="In Progress" checked><span><i class="ring doing"></i>In Progress</span></label>
       <label class="chip"><input type="checkbox" name="present" value="Todo"><span><i class="ring todo"></i>Todo</span></label>
     </div>

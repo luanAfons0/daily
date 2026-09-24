@@ -71,16 +71,27 @@ export function listCycles(store: Store): CycleSummary[] {
       `SELECT c.id, c.started_at,
               SUM(e.status = 'Todo') AS todo,
               SUM(e.status = 'In Progress') AS doing,
+              SUM(e.status = 'In Review') AS review,
               SUM(e.status = 'Done') AS done
          FROM cycles c LEFT JOIN entries e ON e.cycle_id = c.id
         GROUP BY c.id
         ORDER BY c.id DESC`,
     )
-    .all() as (CycleRow & { todo: number | null; doing: number | null; done: number | null })[];
+    .all() as (CycleRow & {
+      todo: number | null;
+      doing: number | null;
+      review: number | null;
+      done: number | null;
+    })[];
   return rows.map((row) => ({
     ...cycleOf(row),
     current: row.id === current.id,
-    counts: { Todo: row.todo ?? 0, 'In Progress': row.doing ?? 0, Done: row.done ?? 0 },
+    counts: {
+      Todo: row.todo ?? 0,
+      'In Progress': row.doing ?? 0,
+      'In Review': row.review ?? 0,
+      Done: row.done ?? 0,
+    },
   }));
 }
 

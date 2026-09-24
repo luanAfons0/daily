@@ -32,16 +32,16 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 ## What it keeps
 
 - An **Entry** is one thing you work on: a title, an optional Markdown body,
-  and a Status — `Todo`, `In Progress` or `Done`.
+  and a Status — `Todo`, `In Progress`, `In Review` or `Done`.
 - A **Cycle** is the time from one Meeting to the next, named by the moment it
   started. A new Entry goes into the current Cycle. The first Cycle starts by
   itself the first time Daily needs one.
-- When a Cycle starts, every Entry that is `Todo` or `In Progress` moves into
-  it with its Status unchanged. It is the same Entry, not a copy. `Done`
+- When a Cycle starts, every Entry that is not `Done` moves into it with its
+  Status unchanged. It is the same Entry, not a copy. `Done`
   Entries stay in the Cycle they were done in.
 - An Entry that is not `Done` is always in the current Cycle. Set a `Done`
-  Entry in an earlier Cycle back to `Todo` or `In Progress`, and it moves into
-  the current Cycle in the same write.
+  Entry in an earlier Cycle back to any other Status, and it moves into the
+  current Cycle in the same write.
 - Every Cycle is kept. The Page lists the earlier ones, newest first, each
   named by the moment it started; open one to see what was Done in it.
 - A **Note** is free Markdown text. It has no Status and belongs to no Cycle,
@@ -80,7 +80,7 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | `update_entry` | `id`, and any of `title`, `body`, `status`  | the Entry as it now is           |
 | `move_entry`   | `id`, and `status`, `before` (optional)     | the Entry in its new place       |
 | `delete_entry` | `id`                                        | the Entry that is gone           |
-| `meeting_markdown` | none                                    | the Markdown, and `{ markdown, done, workingOn }` |
+| `meeting_markdown` | none                                    | the Markdown, and `{ markdown, done, inReview, workingOn }` |
 | `list_notes`   | none                                        | `{ notes }`, newest first        |
 | `create_note`  | `body`, `title` (optional)                  | the new Note                     |
 | `update_note`  | `id`, `body`, `title` (optional)            | the Note as it now is            |
@@ -97,9 +97,9 @@ did not.
 `meeting_markdown` decides what the Page's **Start presentation** shows: one
 Entry at a time, full window, for the Statuses chosen at the top. It has a
 "Done" section — the Entries Done in the Cycle before the current one, then
-those already Done in the current one — and a "Working on" section — the
-current Cycle's `In Progress` Entries, then its `Todo` ones, each in the order
-of its column. It lists titles only. Present after the Meeting's `start_cycle`
+those already Done in the current one — an "In review" section, when
+anything is `In Review` — and a "Working on" section — the current Cycle's
+`In Progress` Entries, then its `Todo` ones, each in the order of its column. It lists titles only. Present after the Meeting's `start_cycle`
 has run; before, "Done" also holds what was reported last time.
 
 Any Status may go to any other. A `body` of `null` or `""` takes the body

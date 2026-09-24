@@ -235,7 +235,7 @@ export type Entry = {
   readonly cycleId: number;
   readonly title: string;
   readonly body: string | null;
-  readonly status: 'Todo' | 'In Progress' | 'Done';
+  readonly status: 'Todo' | 'In Progress' | 'In Review' | 'Done';
   readonly createdAt: string;
   readonly updatedAt: string;
 };

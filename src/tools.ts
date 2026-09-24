@@ -51,7 +51,6 @@ const NOTE_ID = { type: 'integer', description: 'The id of the Note, from list_n
 const NOTE_BODY = { type: 'string', description: 'The text of the Note, as Markdown.' };
 const STATUS = { type: 'string', enum: STATUSES, description: 'Where the Entry stands.' };
 
-/** The tools, over one open Store. */
 /** Where move_entry puts an Entry: above this id, or null for the end. */
 function checkBefore(given: unknown): number | null {
   if (given === undefined || given === null) return null;
@@ -61,6 +60,7 @@ function checkBefore(given: unknown): number | null {
   );
 }
 
+/** The tools, over one open Store. */
 export function toolsFor(store: Store): readonly Tool[] {
   return [
     {
@@ -94,9 +94,9 @@ export function toolsFor(store: Store): readonly Tool[] {
     {
       name: 'start_cycle',
       description:
-        'Start a new Cycle, and move every Entry that is Todo or In Progress into it with its ' +
-        'Status unchanged. Done Entries stay where they are. Every call starts exactly one ' +
-        'Cycle. It answers one sentence.',
+        'Start a new Cycle, and move every Entry that is not Done into it with its Status ' +
+        'unchanged. Done Entries stay where they are. Every call starts exactly one Cycle. ' +
+        'It answers one sentence.',
       inputSchema: { type: 'object', properties: {}, required: [] },
       call: () => {
         const started = within(store, () => startCycle(store));
@@ -243,8 +243,9 @@ export function toolsFor(store: Store): readonly Tool[] {
       name: 'meeting_markdown',
       description:
         'The Markdown for the Meeting: a "Done" section (the Entries Done in the Cycle before ' +
-        'the current one, and those already Done in the current one) and a "Working on" ' +
-        'section (the current In Progress Entries, then the Todo ones).',
+        'the current one, and those already Done in the current one), an "In review" section ' +
+        'when anything is In Review, and a "Working on" section (the current In Progress ' +
+        'Entries, then the Todo ones).',
       inputSchema: { type: 'object', properties: {}, required: [] },
       call: () => {
         const meeting = within(store, () => meetingMarkdown(store));
