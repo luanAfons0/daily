@@ -245,3 +245,11 @@ export type CycleView = {
   readonly cycle: { readonly id: number; readonly startedAt: string; readonly current: boolean };
   readonly entries: readonly Entry[];
 };
+
+/** One Note, as the tools answer it. */
+export type Note = {
+  readonly id: number;
+  readonly body: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};

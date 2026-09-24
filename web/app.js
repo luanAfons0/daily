@@ -194,12 +194,90 @@ function drawCycle(view) {
 
 async function load() {
   try {
-    drawCycle(await call('get_cycle'));
+    const [view, listed] = await Promise.all([call('get_cycle'), call('list_notes')]);
+    drawCycle(view);
+    drawNotes(listed.notes);
     say(null);
   } catch (fault) {
     say(fault.message);
   }
 }
+
+// --- the Notes ------------------------------------------------------------
+
+function noteCard(note) {
+  const edit = el('button', { class: 'act quiet small', type: 'button', text: 'Edit' });
+  const remove = el('button', { class: 'act quiet small danger', type: 'button', text: 'Delete' });
+  const card = el('article', { class: 'card note' }, [
+    formatted(note.body, 'note-body'),
+    el('div', { class: 'entry-foot' }, [
+      el('time', { class: 'hint', datetime: note.createdAt, text: moment(note.createdAt) }),
+      el('span', { class: 'grow' }),
+      edit,
+      remove,
+    ]),
+  ]);
+  edit.addEventListener('click', () => card.replaceWith(noteEditor(note)));
+  remove.addEventListener('click', () => {
+    if (!confirm('Delete this Note for good?')) return;
+    void act(() => call('delete_note', { id: note.id }));
+  });
+  return card;
+}
+
+/** The same Note, open for its body to be edited in place. */
+function noteEditor(note) {
+  const body = el('textarea', { class: 'input', rows: '5', 'aria-label': 'Note' });
+  body.value = note.body;
+  const form = el('form', { class: 'card note editing' }, [
+    body,
+    el('div', { class: 'entry-foot' }, [
+      el('span', { class: 'hint', text: 'Markdown. Esc to cancel.' }),
+      el('span', { class: 'grow' }),
+      el('button', { class: 'act quiet small', type: 'button', text: 'Cancel', 'data-cancel': '' }),
+      el('button', { class: 'act go small', type: 'submit', text: 'Save' }),
+    ]),
+  ]);
+  const cancel = () => void load();
+  form.querySelector('[data-cancel]').addEventListener('click', cancel);
+  form.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') cancel();
+  });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void act(() => call('update_note', { id: note.id, body: body.value }));
+  });
+  queueMicrotask(() => body.focus());
+  return form;
+}
+
+function drawNotes(notes) {
+  const list = byId('notes');
+  if (notes.length === 0) {
+    list.replaceChildren(el('p', { class: 'notes-empty', text: 'No Notes yet.' }));
+    return;
+  }
+  list.replaceChildren(...notes.map(noteCard));
+}
+
+async function keepNote(event) {
+  event.preventDefault();
+  const body = byId('n-body');
+  const button = byId('n-add');
+  button.disabled = true;
+  try {
+    await call('create_note', { body: body.value });
+    body.value = '';
+    say(null);
+    await load();
+  } catch (fault) {
+    say(fault.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+byId('note-compose').addEventListener('submit', keepNote);
 
 /**
  * Do one write, then draw the page again from what the Plugin Server now

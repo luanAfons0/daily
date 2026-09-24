@@ -356,6 +356,39 @@ textarea.input { resize: vertical; min-height: 64px; }
 
 .entry.editing .entry-foot { margin-top: 0; }
 
+/* --- the Notes ---------------------------------------------------------- */
+
+.note-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+.note-compose .input { background: var(--canvas); }
+
+.notes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.note { padding: 12px 14px 10px; }
+
+.note.editing { display: grid; gap: 8px; border-color: var(--accent); }
+
+.note-body { font-size: 14px; }
+
+.notes-empty { margin: 0; color: var(--faint); font-size: 14px; }
+
+@media (hover: hover) {
+  .note:not(.editing) .entry-foot .act { opacity: 0; transition: opacity 120ms ease; }
+  .note:hover .entry-foot .act,
+  .note:focus-within .entry-foot .act { opacity: 1; }
+}
+
 /* --- Markdown, shown formatted ------------------------------------------ */
 
 .md { overflow-wrap: anywhere; }
