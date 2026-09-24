@@ -74,6 +74,9 @@
 
 html { -webkit-text-size-adjust: 100%; }
 
+/* While a dialog is open, the page behind it stays still. */
+html:has(dialog[open]) { overflow: hidden; }
+
 body {
   margin: 0;
   background: var(--canvas);
@@ -544,7 +547,7 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
    column reads as a list and not as a form. A touch screen has no pointing,
    so there they always show. */
 @media (hover: hover) {
-  .entry:not(.editing) .entry-foot { opacity: 0; transition: opacity 120ms ease; }
+  .entry .entry-foot { opacity: 0; transition: opacity 120ms ease; }
   .entry:hover .entry-foot,
   .entry:focus-within .entry-foot { opacity: 1; }
 }
@@ -558,14 +561,6 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
   color: var(--muted);
 }
 
-.entry.editing,
-.note.editing { display: grid; gap: 8px; border-color: var(--accent); }
-
-/* A Note being edited widens its column: a card is too narrow to write in,
-   and the Note stays where it was. */
-.notes-col:has(.note.editing) { flex: 2.5; }
-
-.entry.editing .entry-foot { margin-top: 0; }
 
 /* --- the earlier Cycles, as the pages of the log before this one -------- */
 
@@ -631,14 +626,26 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
   white-space: nowrap;
 }
 
+/* Masonry: up to three columns, and each card only as tall as its own text,
+   so a short Entry is not stretched to the height of a long one. */
 .earlier-body {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 8px;
+  columns: 3 280px;
+  column-gap: 12px;
   padding: 4px 4px 16px 24px;
 }
 
-.earlier-body .entry + .entry { margin-top: 0; }
+.earlier-body .entry { break-inside: avoid; margin: 0 0 12px; }
+
+.earlier-body > .column-empty { column-span: all; }
+
+/* A long body, folded: it fades out at the fold, and Show all opens it. */
+.entry-body.folded {
+  max-height: 168px;
+  overflow: hidden;
+  mask-image: linear-gradient(#000 calc(100% - 48px), transparent);
+}
+
+.act.unfold { margin: 4px 0 0 -8px; color: var(--accent); }
 
 .earlier-empty { margin: 10px 0 0; }
 
@@ -778,6 +785,76 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 
 .mark-tick[aria-current] { height: 26px; opacity: 1; }
 
+/* --- editing an Entry or a Note, in a dialog ----------------------------- */
+
+/* Wide enough to write in, as tall as the text needs, up to most of the
+   window; the Notes behind it keep their places. */
+.sheet {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.sheet::backdrop { background: color-mix(in srgb, var(--canvas) 70%, transparent); }
+
+.sheet-form { display: flex; flex-direction: column; gap: 10px; padding: 14px 20px 16px; }
+
+.sheet-hd { display: flex; align-items: center; justify-content: space-between; }
+
+.sheet-hd h2 {
+  margin: 0;
+  font: 600 14px/1 var(--display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sheet-hd .quick-close { margin-left: 0; }
+
+.sheet-title,
+.sheet-body {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+}
+
+.sheet-title { font: 600 22px/1.3 var(--sans); }
+
+.sheet-body {
+  min-height: 200px;
+  max-height: calc(100vh - 240px);
+  field-sizing: content;
+  resize: none;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.sheet-title::placeholder,
+.sheet-body::placeholder { color: var(--faint); }
+
+.sheet .sheet-statuses { padding: 0; }
+
+.sheet-error { margin: 0; color: var(--danger); font-size: 14px; }
+
+.sheet-form [hidden] { display: none; }
+
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.sheet-foot .hint { margin-right: auto; }
+
 /* --- asking before a delete ------------------------------------------- */
 
 .ask {
@@ -788,7 +865,6 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 20px 50px color-mix(in srgb, var(--ink) 25%, transparent);
 }
 
 /* A question that loses nothing is asked in the accent, not in red. */
@@ -832,7 +908,499 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
   overflow-wrap: anywhere;
 }
 
-.note-title-input { font-weight: 600; }
+/* Masonry: app.js deals the Notes into columns, each to the shortest one. */
+.notes {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.notes-col {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  /* One track no wider than the column. An automatic track grows to the
+     longest thing that cannot wrap, a link chip, and the card spills out. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  transition: flex-grow 160ms ease;
+}
+
+.note { padding: 12px 14px 8px; }
+
+.note-body { font-size: 14px; }
+
+.notes-empty { margin: 0; color: var(--faint); font-size: 14px; }
+
+@media (hover: hover) {
+  .note .entry-foot .act { opacity: 0; transition: opacity 120ms ease; }
+  .note:hover .entry-foot .act,
+  .note:focus-within .entry-foot .act { opacity: 1; }
+}
+
+/* --- Markdown, shown formatted ------------------------------------------ */
+
+.md { overflow-wrap: anywhere; }
+
+.md > :first-child { margin-top: 0; }
+
+.md > :last-child { margin-bottom: 0; }
+
+.md p, .md ul, .md ol, .md pre, .md blockquote { margin: 0 0 0.5em; }
+
+.md ul, .md ol { padding-left: 1.3em; }
+
+/* A nested list sits tight under its item, with a hollow bullet, then a
+   square, so its depth reads at a glance. */
+.md li > ul, .md li > ol { margin: 0.15em 0 0.25em; }
+
+.md ul ul { list-style-type: circle; }
+
+.md ul ul ul { list-style-type: square; }
+
+.md li::marker { color: var(--faint); }
+
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
+  margin: 0.6em 0 0.3em;
+  font: 600 1em/1.3 var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.md a { color: var(--accent); text-underline-offset: 2px; }
+
+/* A bare address, shown short, reads as a link chip: an icon, no underline. */
+.md a.bare {
+  padding: 0 5px 0 3px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  text-decoration: none;
+  /* A long address ends in an ellipsis inside its card instead of running
+     out of it; the whole address is in the link and its tooltip. */
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.md a.bare::before {
+  content: '';
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-right: 4px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1'/%3E%3Cpath d='M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.md a.bare:hover { text-decoration: underline; }
+
+.md code { padding: 1px 4px; border-radius: 3px; background: var(--sunken); }
+
+.md pre { padding: 8px 10px; border-radius: 4px; background: var(--sunken); overflow-x: auto; }
+
+.md pre code { padding: 0; background: none; }
+
+.md blockquote { padding-left: 10px; border-left: 3px solid var(--line); color: var(--muted); }
+
+.md li:has(> input[type='checkbox']) { list-style: none; margin-left: -1.2em; }
+
+.md input[type='checkbox'] { accent-color: var(--done); }
+
+.md hr { border: none; border-top: 1px solid var(--line); }
+
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .bar { width: calc(100% - 32px); padding-top: 14px; }
+  .page { padding: 4px 16px 56px; }
+  .board { grid-template-columns: minmax(0, 1fr); }
+  .mast-acts { width: 100%; }
+  .mast-acts .act { flex: 1; }
+  .earlier-counts { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* --- the Popup form (new.html) ------------------------------------------ */
+
+/* FirstMate's Popup is already a framed window, so the form is the window:
+   a breadcrumb, a title and a body with no borders of their own, the Status
+   as chips, and a footer under a rule. The body takes the height left. */
+body.popup { background: var(--surface); overflow-x: hidden; }
+
+.quick { min-height: 100vh; display: flex; }
+
+.quick-form { flex: 1; display: flex; flex-direction: column; }
+
+.quick-form [hidden] { display: none !important; }
+
+.quick-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 12px 0 16px;
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  background: var(--sunken);
+  font: 600 12px/1.4 var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.crumb .mark { width: 11px; height: 11px; border-width: 1.5px; background-size: 4px 4px; }
+
+.crumb-sep { color: var(--faint); padding: 0 2px; }
+
+/* What is made, as the breadcrumb's last part: plain text, the chosen one lit. */
+.quick-hd .kinds { border: none; gap: 2px; }
+
+.quick-hd .kinds .pill span { padding: 3px 8px; border-radius: var(--radius); font-size: 13px; }
+
+.quick-hd .kinds .pill + .pill span { border-left: none; }
+
+.quick-hd .kinds .pill input:checked + span { background: transparent; color: var(--ink); }
+
+/* The picker: New, or an Entry or a Note already there, to be edited. A
+   button in the breadcrumb, and under it a menu to find one by its name. */
+.picker { min-width: 0; }
+
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 230px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* The name ends in an ellipsis, so the caret after it always shows. */
+.pick-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+.pick::after {
+  content: '';
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin: -3px 0 0 2px;
+  border-right: 1.5px solid var(--faint);
+  border-bottom: 1.5px solid var(--faint);
+  transform: rotate(45deg);
+}
+
+.pick:hover,
+.pick[aria-expanded='true'] { border-color: var(--line); background: var(--sunken); }
+
+.pick .ring { width: 12px; height: 12px; border-width: 1.5px; }
+
+/* The Popup is narrow, so the menu spans it, under the breadcrumb, rather
+   than hang off the button and out of the window. */
+.pick-menu {
+  position: fixed;
+  top: 46px;
+  left: 12px;
+  right: 12px;
+  z-index: 10;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.pick-menu[hidden] { display: none; }
+
+.pick-find {
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+}
+
+.pick-find::placeholder { color: var(--faint); }
+
+.pick-list { max-height: 260px; overflow-y: auto; padding: 4px; }
+
+/* A Status, over its Entries, as the board names its columns. */
+.pick-group {
+  margin: 8px 8px 2px;
+  font: 600 11px/1 var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pick-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pick-row .ring { width: 12px; height: 12px; border-width: 1.5px; }
+
+.pick-row[aria-selected='true'] { background: var(--sunken); }
+
+/* New, marked with a plus in the ring's place. */
+.pick-plus {
+  flex: none;
+  position: relative;
+  width: 12px;
+  height: 12px;
+}
+
+.pick-plus::before,
+.pick-plus::after {
+  content: '';
+  position: absolute;
+  inset: 5px 0;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.pick-plus::after { inset: 0 5px; }
+
+.pick-none { margin: 8px; color: var(--faint); font-size: 13px; }
+
+.quick-close { margin-left: 0; }
+
+.stage-slide {
+  overflow: auto;
+  padding: clamp(24px, 6vh, 72px) 24px;
+}
+
+.slide { width: min(880px, 100%); margin: 0 auto; }
+
+/* Where this Entry stands: its Status, and how far through that Status. */
+.slide-where {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  font: 600 14px/1 var(--display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.slide-where .ring { width: 16px; height: 16px; }
+
+/* The title, in the condensed face of the Cycle's own heading. */
+.slide-title {
+  margin: 0 0 28px;
+  font: 600 clamp(34px, 5.5vw, 64px)/1.02 var(--display);
+  font-stretch: 85%;
+  letter-spacing: -0.005em;
+  overflow-wrap: anywhere;
+}
+
+.slide-body { font-size: clamp(17px, 1.6vw, 21px); line-height: 1.6; }
+
+.slide-body li + li { margin-top: 0.3em; }
+
+.slide-none, .slide-empty { margin: 0; color: var(--faint); font-size: 18px; }
+
+.slide-empty { text-align: center; padding-top: 12vh; }
+
+/* A slide comes in from the side it was asked for, briefly. */
+.slide.from-right { animation: slide-in-right 180ms ease-out; }
+
+.slide.from-left { animation: slide-in-left 180ms ease-out; }
+
+@keyframes slide-in-right { from { opacity: 0; transform: translateX(24px); } }
+
+@keyframes slide-in-left { from { opacity: 0; transform: translateX(-24px); } }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--line);
+}
+
+/* The tape: one upright mark per Entry, in its Status colour, like the tally
+   of a Cycle. The current one stands taller; any one can be clicked. */
+.tape {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  min-height: 28px;
+}
+
+.mark-tick {
+  width: 10px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: var(--todo);
+  opacity: 0.45;
+  transition: height 120ms ease, opacity 120ms ease;
+}
+
+.mark-tick.doing { background: var(--doing); }
+
+.mark-tick.review { background: var(--review); }
+
+.mark-tick.done { background: var(--done); }
+
+.mark-tick:hover { opacity: 0.8; }
+
+.mark-tick[aria-current] { height: 26px; opacity: 1; }
+
+/* --- editing an Entry or a Note, in a dialog ----------------------------- */
+
+/* Wide enough to write in, as tall as the text needs, up to most of the
+   window; the Notes behind it keep their places. */
+.sheet {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.sheet::backdrop { background: color-mix(in srgb, var(--canvas) 70%, transparent); }
+
+.sheet-form { display: flex; flex-direction: column; gap: 10px; padding: 14px 20px 16px; }
+
+.sheet-hd { display: flex; align-items: center; justify-content: space-between; }
+
+.sheet-hd h2 {
+  margin: 0;
+  font: 600 14px/1 var(--display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sheet-hd .quick-close { margin-left: 0; }
+
+.sheet-title,
+.sheet-body {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+}
+
+.sheet-title { font: 600 22px/1.3 var(--sans); }
+
+.sheet-body {
+  min-height: 200px;
+  max-height: calc(100vh - 240px);
+  field-sizing: content;
+  resize: none;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.sheet-title::placeholder,
+.sheet-body::placeholder { color: var(--faint); }
+
+.sheet .sheet-statuses { padding: 0; }
+
+.sheet-error { margin: 0; color: var(--danger); font-size: 14px; }
+
+.sheet-form [hidden] { display: none; }
+
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.sheet-foot .hint { margin-right: auto; }
+
+/* --- asking before a delete ------------------------------------------- */
+
+.ask {
+  width: min(440px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* A question that loses nothing is asked in the accent, not in red. */
+.ask.calm { border-top-color: var(--accent); }
+
+.ask::backdrop { background: color-mix(in srgb, var(--canvas) 70%, transparent); }
+
+.ask-form { display: grid; gap: 10px; padding: 18px 20px 20px; }
+
+.ask h2 {
+  margin: 0;
+  font: 600 17px/1.2 var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* What would be deleted, quoted, so the person sees which one it is. */
+.ask-quote {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--line);
+  background: var(--canvas);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ask-quote[hidden] { display: none; }
+
+.ask-text { margin: 0; color: var(--muted); font-size: 14px; }
+
+.ask-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+/* --- the Notes ---------------------------------------------------------- */
+
+/* A Note's own title, set like the headings of the log. */
+.note-title {
+  margin: 0 0 6px;
+  font: 600 15px/1.3 var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
 
 /* Masonry: app.js deals the Notes into columns, each to the shortest one. */
 .notes {
@@ -859,7 +1427,7 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 .notes-empty { margin: 0; color: var(--faint); font-size: 14px; }
 
 @media (hover: hover) {
-  .note:not(.editing) .entry-foot .act { opacity: 0; transition: opacity 120ms ease; }
+  .note .entry-foot .act { opacity: 0; transition: opacity 120ms ease; }
   .note:hover .entry-foot .act,
   .note:focus-within .entry-foot .act { opacity: 1; }
 }

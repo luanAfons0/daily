@@ -70,27 +70,135 @@ async function editable(which) {
   return kept[which];
 }
 
-/** Fill the picker with New, then the Entries or the Notes there are. */
-async function fillPicker() {
-  const which = kind();
-  const picker = byId('q-pick');
-  picker.replaceChildren(new Option('New', ''));
-  try {
-    const items = await editable(which);
-    if (kind() !== which) return;
-    for (const [id, item] of items) {
-      const label = which === 'entry' ? named(item) + ' · ' + item.status : named(item);
-      picker.append(new Option('Edit: ' + label, id));
-    }
-  } catch (fault) {
-    say(fault.message);
-  }
+// --- the picker: New, or one already there ---------------------------------
+
+/** The Statuses, in the order the board stands, and the ring each wears. */
+const ORDER = ['Todo', 'In Progress', 'In Review', 'Done'];
+
+/** The id of the one chosen to be edited, or '' for a new one. */
+let pickedId = '';
+/** The rows the menu shows now, and the one the keys are on. */
+let rows = [];
+let active = 0;
+
+/** Text as a find compares it: no case, no accents, so "migracao" finds "Migração". */
+function plain(text) {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
 /** The Entry or Note chosen to be edited, or undefined for a new one. */
 function picked() {
   const items = kept[kind()];
-  return items ? items.get(byId('q-pick').value) : undefined;
+  return items && pickedId ? items.get(pickedId) : undefined;
+}
+
+/** One row of the menu: a ring for an Entry, then its name. */
+function row(label, value, dot) {
+  const node = document.createElement('div');
+  node.className = 'pick-row';
+  node.id = 'q-row-' + (value || 'new');
+  node.setAttribute('role', 'option');
+  node.dataset.value = value;
+  if (dot !== null) {
+    const mark = document.createElement('i');
+    mark.className = dot ? 'ring ' + dot : 'pick-plus';
+    node.append(mark);
+  }
+  const text = document.createElement('span');
+  text.textContent = label;
+  node.append(text);
+  node.addEventListener('mousedown', (event) => event.preventDefault());
+  node.addEventListener('click', () => choose(value));
+  return node;
+}
+
+/** Draw the menu for what is typed in the find field. */
+async function drawMenu() {
+  const which = kind();
+  const list = byId('q-list');
+  const wanted = plain(byId('q-find').value.trim());
+  let items;
+  try {
+    items = await editable(which);
+  } catch (fault) {
+    say(fault.message);
+    return;
+  }
+  if (kind() !== which) return;
+
+  const found = [...items.values()].filter((item) => plain(named(item)).includes(wanted));
+  const nodes = [row(which === 'note' ? 'New Note' : 'New Entry', '', '')];
+  if (which === 'note') {
+    nodes.push(...found.map((item) => row(named(item), String(item.id), null)));
+  } else {
+    for (const status of ORDER) {
+      const mine = found.filter((item) => item.status === status);
+      if (mine.length === 0) continue;
+      const heading = document.createElement('p');
+      heading.className = 'pick-group';
+      heading.textContent = status;
+      nodes.push(heading);
+      nodes.push(...mine.map((item) => row(named(item), String(item.id), RINGS[status])));
+    }
+  }
+  if (found.length === 0 && wanted) {
+    const none = document.createElement('p');
+    none.className = 'pick-none';
+    none.textContent = 'Nothing matches “' + byId('q-find').value.trim() + '”.';
+    nodes.push(none);
+  }
+  list.replaceChildren(...nodes);
+  rows = [...list.querySelectorAll('.pick-row')];
+  // With something typed, the first match is the likely one; with nothing,
+  // the one already chosen.
+  const current = rows.findIndex((node) => node.dataset.value === pickedId);
+  active = wanted && rows.length > 1 ? 1 : Math.max(0, current);
+  light();
+}
+
+/** Mark the row the keys are on, and keep it in view. */
+function light() {
+  rows.forEach((node, index) => node.setAttribute('aria-selected', String(index === active)));
+  const on = rows[active];
+  if (!on) return;
+  byId('q-find').setAttribute('aria-activedescendant', on.id);
+  on.scrollIntoView({ block: 'nearest' });
+}
+
+function menuOpen() {
+  return !byId('q-menu').hidden;
+}
+
+function openMenu() {
+  byId('q-menu').hidden = false;
+  byId('q-pick').setAttribute('aria-expanded', 'true');
+  byId('q-find').value = '';
+  byId('q-find').focus();
+  void drawMenu();
+}
+
+function shutMenu() {
+  byId('q-menu').hidden = true;
+  byId('q-pick').setAttribute('aria-expanded', 'false');
+}
+
+/** Choose New, or one to edit: fill the fields, and name it on the button. */
+function choose(value) {
+  pickedId = value;
+  shutMenu();
+  const item = picked();
+  const button = byId('q-pick');
+  button.replaceChildren();
+  if (item && kind() === 'entry') {
+    const mark = document.createElement('i');
+    mark.className = 'ring ' + RINGS[item.status];
+    button.append(mark);
+  }
+  const name = document.createElement('span');
+  name.className = 'pick-name';
+  name.textContent = item ? named(item) : 'New';
+  button.append(name);
+  pick();
 }
 
 function saveLabel() {
@@ -130,7 +238,12 @@ function shape() {
   byId('q-save').textContent = note ? 'Save Note' : 'Save Entry';
   title.focus();
   say(null);
-  void fillPicker();
+  pickedId = '';
+  const name = document.createElement('span');
+  name.className = 'pick-name';
+  name.textContent = 'New';
+  byId('q-pick').replaceChildren(name);
+  shutMenu();
 }
 
 async function save(event) {
@@ -180,7 +293,34 @@ for (const choice of document.querySelectorAll('input[name="status"]')) {
   choice.addEventListener('change', ring);
 }
 
-byId('q-pick').addEventListener('change', pick);
+byId('q-pick').addEventListener('click', () => (menuOpen() ? shutMenu() : openMenu()));
+byId('q-find').addEventListener('input', () => void drawMenu());
+
+// The menu's own keys: up and down move, Enter chooses, Esc shuts only the
+// menu, and Tab leaves it.
+byId('q-find').addEventListener('keydown', (event) => {
+  const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+  if (step) {
+    event.preventDefault();
+    active = (active + step + rows.length) % rows.length;
+    light();
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    if (rows[active]) choose(rows[active].dataset.value);
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    shutMenu();
+    byId('q-pick').focus();
+  } else if (event.key === 'Tab') {
+    shutMenu();
+  }
+});
+
+// A click anywhere else shuts the menu.
+document.addEventListener('mousedown', (event) => {
+  if (menuOpen() && !event.target.closest('.picker')) shutMenu();
+});
 
 // For a Note, Enter in the title goes on to the text, which a Note cannot be
 // kept without. For an Entry, Enter saves from the title as from anywhere.
@@ -197,10 +337,12 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') close();
 });
 
-// Enter saves from any field, the body too, so nothing here needs the mouse.
-// Shift+Enter is still a new line in the body, for a Note of more than one.
-byId('q-body').addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) void save(event);
-});
+// The same keys as the Plugin Page: Shift+Enter saves from any field, and
+// Enter alone is a new line in the text, which is Markdown and has many.
+for (const field of [byId('q-title'), byId('q-body')]) {
+  field.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && event.shiftKey && !event.isComposing) void save(event);
+  });
+}
 
 shape();
