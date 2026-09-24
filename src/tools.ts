@@ -6,7 +6,14 @@
  * Every tool answers the same data twice — as text, for whoever reads it in a
  * terminal, and as structure, for the Page, which draws it.
  */
-import { currentCycle, saidOf, startCycle, viewOf } from './cycles.ts';
+import {
+  currentCycle,
+  cycleById,
+  listCycles,
+  saidOf,
+  startCycle,
+  viewOf,
+} from './cycles.ts';
 import {
   checkBody,
   checkId,
@@ -42,9 +49,30 @@ export function toolsFor(store: Store): readonly Tool[] {
   return [
     {
       name: 'get_cycle',
-      description: 'The current Cycle and every Entry in it.',
+      description: 'One Cycle and every Entry in it: the one named by id, or the current one.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', description: 'The id of a Cycle, from list_cycles. Optional.' },
+        },
+        required: [],
+      },
+      call: (given) => {
+        const id = given['id'] === undefined ? null : checkCycleId(given['id']);
+        return told(
+          within(store, () =>
+            viewOf(store, id === null ? currentCycle(store) : cycleById(store, id)),
+          ),
+        );
+      },
+    },
+
+    {
+      name: 'list_cycles',
+      description:
+        'Every Cycle there ever was, newest first, each with its Entries counted by Status.',
       inputSchema: { type: 'object', properties: {}, required: [] },
-      call: () => told(within(store, () => viewOf(store, currentCycle(store)))),
+      call: () => told({ cycles: within(store, () => listCycles(store)) }),
     },
 
     {
@@ -99,7 +127,9 @@ export function toolsFor(store: Store): readonly Tool[] {
             'update_entry needs at least one of "title", "body" or "status" to change.',
           );
         }
-        return told(within(store, () => updateEntry(store, id, change)));
+        return told(
+          within(store, () => updateEntry(store, id, change, () => currentCycle(store).id)),
+        );
       },
     },
 
@@ -155,6 +185,15 @@ export function toolsFor(store: Store): readonly Tool[] {
       },
     },
   ];
+}
+
+/** A Cycle's id as given, or a sentence that says what an id is. */
+function checkCycleId(given: unknown): number {
+  if (typeof given === 'number' && Number.isSafeInteger(given) && given > 0) return given;
+  throw badInput(
+    `get_cycle takes "id" as the number list_cycles gives each Cycle, or leaves it out ` +
+      `for the current one, and was given ${JSON.stringify(given)}.`,
+  );
 }
 
 /** What update_entry was asked to change, each field checked. */

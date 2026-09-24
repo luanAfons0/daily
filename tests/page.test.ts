@@ -88,7 +88,7 @@ test('the Page claims nothing about Entries or Notes before it has asked', async
   const html = await readFile(join(WEB, 'index.html'), 'utf8');
 
   assert.ok(
-    !/Nothing here|no Entries|No Notes/i.test(html),
+    !/Nothing here|no Entries|No Notes|first Cycle/i.test(html),
     'the served markup already says something is empty, which it cannot know before it asks',
   );
 });

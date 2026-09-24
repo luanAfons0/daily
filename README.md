@@ -33,6 +33,11 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 - When a Cycle starts, every Entry that is `Todo` or `In Progress` moves into
   it with its Status unchanged. It is the same Entry, not a copy. `Done`
   Entries stay in the Cycle they were done in.
+- An Entry that is not `Done` is always in the current Cycle. Set a `Done`
+  Entry in an earlier Cycle back to `Todo` or `In Progress`, and it moves into
+  the current Cycle in the same write.
+- Every Cycle is kept. The Page lists the earlier ones, newest first, each
+  named by the moment it started; open one to see what was Done in it.
 - A **Note** is free Markdown text. It has no Status and belongs to no Cycle,
   so it never moves. Notes are listed newest first.
 
@@ -47,7 +52,8 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | Tool           | Arguments                                   | Answers                          |
 | -------------- | ------------------------------------------- | -------------------------------- |
 | `start_cycle`  | none                                        | one sentence, and `{ cycle, moved, said }` |
-| `get_cycle`    | none                                        | the current Cycle and its Entries |
+| `get_cycle`    | optional `id`                               | that Cycle, or the current one, and its Entries |
+| `list_cycles`  | none                                        | `{ cycles }`, newest first, each with counts by Status |
 | `create_entry` | `title`, `status`, optional `body`          | the new Entry                    |
 | `update_entry` | `id`, and any of `title`, `body`, `status`  | the Entry as it now is           |
 | `delete_entry` | `id`                                        | the Entry that is gone           |

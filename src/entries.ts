@@ -94,17 +94,30 @@ export type EntryChange = {
 /**
  * Change one Entry. Any Status may go to any other, so a mistake is always
  * one call away from being put right.
+ *
+ * An Entry that is not `Done` is always in the current Cycle. So a `Done`
+ * Entry in an earlier Cycle that is set back to `Todo` or `In Progress` moves
+ * into the current Cycle in this same write; the caller holds the transaction.
  */
-export function updateEntry(store: Store, id: number, change: EntryChange): Entry {
+export function updateEntry(
+  store: Store,
+  id: number,
+  change: EntryChange,
+  currentCycleId: () => number,
+): Entry {
   const before = entryById(store, id);
   const after = {
     title: change.title ?? before.title,
     body: change.body === undefined ? before.body : change.body,
     status: change.status ?? before.status,
   };
+  const cycleId = after.status === 'Done' ? before.cycleId : currentCycleId();
   store
-    .prepare('UPDATE entries SET title = ?, body = ?, status = ?, updated_at = ? WHERE id = ?')
-    .run(after.title, after.body, after.status, now(), id);
+    .prepare(
+      'UPDATE entries SET cycle_id = ?, title = ?, body = ?, status = ?, updated_at = ? ' +
+        'WHERE id = ?',
+    )
+    .run(cycleId, after.title, after.body, after.status, now(), id);
   return entryById(store, id);
 }
 
