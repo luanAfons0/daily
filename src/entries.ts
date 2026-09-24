@@ -84,6 +84,46 @@ export function createEntry(
   return entryById(store, Number(done.lastInsertRowid));
 }
 
+/** What a caller may change about an Entry: any of the three, at least one. */
+export type EntryChange = {
+  readonly title?: string;
+  readonly body?: string | null;
+  readonly status?: Status;
+};
+
+/**
+ * Change one Entry. Any Status may go to any other, so a mistake is always
+ * one call away from being put right.
+ */
+export function updateEntry(store: Store, id: number, change: EntryChange): Entry {
+  const before = entryById(store, id);
+  const after = {
+    title: change.title ?? before.title,
+    body: change.body === undefined ? before.body : change.body,
+    status: change.status ?? before.status,
+  };
+  store
+    .prepare('UPDATE entries SET title = ?, body = ?, status = ?, updated_at = ? WHERE id = ?')
+    .run(after.title, after.body, after.status, now(), id);
+  return entryById(store, id);
+}
+
+/** Take one Entry away for good. It is gone from every Cycle. */
+export function deleteEntry(store: Store, id: number): Entry {
+  const gone = entryById(store, id);
+  store.prepare('DELETE FROM entries WHERE id = ?').run(id);
+  return gone;
+}
+
+/** An Entry's id as given, or a sentence that says what an id is. */
+export function checkId(tool: string, given: unknown): number {
+  if (typeof given === 'number' && Number.isSafeInteger(given) && given > 0) return given;
+  throw badInput(
+    `${tool} needs "id": the number get_cycle gives each Entry, and was given ` +
+      `${JSON.stringify(given) ?? 'nothing'}.`,
+  );
+}
+
 /** A title as given, or a sentence that says what is wrong with it. */
 export function checkTitle(tool: string, given: unknown): string {
   if (typeof given !== 'string' || given.trim() === '') {

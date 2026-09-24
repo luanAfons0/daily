@@ -9,7 +9,7 @@ import test from 'node:test';
 import { PROTOCOL_VERSION, startedAndShaken, startPluginServer } from './helpers/plugin.ts';
 
 /** Every tool Daily ships. The names are the contract with other Plugins. */
-const TOOLS = ['create_entry', 'get_cycle'];
+const TOOLS = ['create_entry', 'delete_entry', 'get_cycle', 'update_entry'];
 
 test('the Plugin Server answers the handshake', async (t) => {
   const plugin = await startPluginServer(t);

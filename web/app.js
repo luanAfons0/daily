@@ -29,7 +29,8 @@ function el(tag, attrs, children) {
   for (const [key, value] of Object.entries(attrs || {})) {
     if (key === 'class') node.className = value;
     else if (key === 'text') node.textContent = value;
-    else if (value !== null && value !== undefined && value !== false) node.setAttribute(key, value);
+    else if (value === null || value === undefined || value === false) continue;
+    else node.setAttribute(key, value);
   }
   for (const child of children || []) {
     if (child === null || child === undefined) continue;
@@ -97,11 +98,75 @@ function moment(at) {
 
 // --- the current Cycle ----------------------------------------------------
 
+/** A body, as Markdown shown formatted (markdown.js). */
+function formatted(markdown, className) {
+  const node = el('div', { class: 'md ' + className });
+  node.innerHTML = renderMarkdown(markdown);
+  return node;
+}
+
+function statusPicker(entry) {
+  const picker = el(
+    'select',
+    { class: 'status-pick', 'aria-label': 'Status of ' + entry.title },
+    STATUSES.map((status) =>
+      el('option', { value: status.name, selected: status.name === entry.status }, [status.name]),
+    ),
+  );
+  picker.addEventListener('change', () =>
+    act(() => call('update_entry', { id: entry.id, status: picker.value })),
+  );
+  return picker;
+}
+
 function entryCard(entry) {
-  return el('article', { class: 'card entry' }, [
+  const edit = el('button', { class: 'act quiet small', type: 'button', text: 'Edit' });
+  const remove = el('button', { class: 'act quiet small danger', type: 'button', text: 'Delete' });
+  const card = el('article', { class: 'card entry' }, [
     el('p', { class: 'entry-title', text: entry.title }),
-    entry.body ? el('div', { class: 'entry-body', text: entry.body }) : null,
+    entry.body ? formatted(entry.body, 'entry-body') : null,
+    el('div', { class: 'entry-foot' }, [
+      statusPicker(entry),
+      el('span', { class: 'grow' }),
+      edit,
+      remove,
+    ]),
   ]);
+  edit.addEventListener('click', () => card.replaceWith(entryEditor(entry)));
+  remove.addEventListener('click', () => {
+    if (!confirm('Delete “' + entry.title + '” for good?')) return;
+    void act(() => call('delete_entry', { id: entry.id }));
+  });
+  return card;
+}
+
+/** The same Entry, open for its title and body to be edited in place. */
+function entryEditor(entry) {
+  const title = el('input', { class: 'input', type: 'text', 'aria-label': 'Title' });
+  title.value = entry.title;
+  const body = el('textarea', { class: 'input', rows: '4', 'aria-label': 'Body' });
+  body.value = entry.body || '';
+  const form = el('form', { class: 'card entry editing' }, [
+    title,
+    body,
+    el('div', { class: 'entry-foot' }, [
+      el('span', { class: 'hint', text: 'Markdown. Esc to cancel.' }),
+      el('span', { class: 'grow' }),
+      el('button', { class: 'act quiet small', type: 'button', text: 'Cancel', 'data-cancel': '' }),
+      el('button', { class: 'act go small', type: 'submit', text: 'Save' }),
+    ]),
+  ]);
+  const cancel = () => void load();
+  form.querySelector('[data-cancel]').addEventListener('click', cancel);
+  form.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') cancel();
+  });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void act(() => call('update_entry', { id: entry.id, title: title.value, body: body.value }));
+  });
+  queueMicrotask(() => title.focus());
+  return form;
 }
 
 function column(status, entries) {
@@ -131,6 +196,19 @@ async function load() {
   try {
     drawCycle(await call('get_cycle'));
     say(null);
+  } catch (fault) {
+    say(fault.message);
+  }
+}
+
+/**
+ * Do one write, then draw the page again from what the Plugin Server now
+ * holds. The page never patches itself: the Plugin Server is the truth.
+ */
+async function act(write) {
+  try {
+    await write();
+    await load();
   } catch (fault) {
     say(fault.message);
   }

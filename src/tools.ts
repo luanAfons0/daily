@@ -7,12 +7,24 @@
  * terminal, and as structure, for the Page, which draws it.
  */
 import { currentCycle, viewOf } from './cycles.ts';
-import { checkBody, checkStatus, checkTitle, createEntry, STATUSES } from './entries.ts';
+import {
+  checkBody,
+  checkId,
+  checkStatus,
+  checkTitle,
+  createEntry,
+  deleteEntry,
+  STATUSES,
+  updateEntry,
+  type EntryChange,
+} from './entries.ts';
+import { badInput } from './mcp.ts';
 import type { Tool, ToolResult } from './mcp.ts';
 import { within, type Store } from './store.ts';
 
 const TITLE = { type: 'string', description: 'One line that says what the Entry is.' };
 const BODY = { type: 'string', description: 'Details, as Markdown. Optional.' };
+const ID = { type: 'integer', description: 'The id of the Entry, from get_cycle.' };
 const STATUS = { type: 'string', enum: STATUSES, description: 'Where the Entry stands.' };
 
 /** The tools, over one open Store. */
@@ -42,7 +54,49 @@ export function toolsFor(store: Store): readonly Tool[] {
         return told(within(store, () => createEntry(store, currentCycle(store).id, fields)));
       },
     },
+
+    {
+      name: 'update_entry',
+      description:
+        'Change the title, the body or the Status of one Entry. Any Status may go to any ' +
+        'other. A body of null or "" takes the body away.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: ID, title: TITLE, body: BODY, status: STATUS },
+        required: ['id'],
+      },
+      call: (given) => {
+        const id = checkId('update_entry', given['id']);
+        const change = changeOf(given);
+        if (Object.keys(change).length === 0) {
+          throw badInput(
+            'update_entry needs at least one of "title", "body" or "status" to change.',
+          );
+        }
+        return told(within(store, () => updateEntry(store, id, change)));
+      },
+    },
+
+    {
+      name: 'delete_entry',
+      description: 'Take one Entry away for good, from whichever Cycle it is in.',
+      inputSchema: { type: 'object', properties: { id: ID }, required: ['id'] },
+      call: (given) => {
+        const id = checkId('delete_entry', given['id']);
+        return told(within(store, () => deleteEntry(store, id)));
+      },
+    },
   ];
+}
+
+/** What update_entry was asked to change, each field checked. */
+function changeOf(given: Readonly<Record<string, unknown>>): EntryChange {
+  const tool = 'update_entry';
+  return {
+    ...(given['title'] === undefined ? {} : { title: checkTitle(tool, given['title']) }),
+    ...(given['body'] === undefined ? {} : { body: checkBody(tool, given['body']) }),
+    ...(given['status'] === undefined ? {} : { status: checkStatus(tool, given['status']) }),
+  };
 }
 
 /** One answer, in both the shapes MCP offers, from one value. */
