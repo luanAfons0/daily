@@ -49,7 +49,11 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 ## What it keeps
 
 - An **Entry** is one thing you work on: a title, an optional Markdown body,
-  and a Status — `Todo`, `In Progress`, `In Review` or `Done`.
+  a Status — `Todo`, `In Progress`, `In Review` or `Done` — and an optional
+  **Link**: the http or https address of the issue or pull request it is
+  about, in Linear, GitHub or elsewhere. The Entry card shows it as a small
+  mark in its top-right corner (Linear's, GitHub's, or a plain link) that
+  opens it in a new tab.
 - A **Cycle** is the time from one Meeting to the next, named by the moment it
   started. A new Entry goes into the current Cycle. The first Cycle starts by
   itself the first time Worklog needs one.
@@ -72,8 +76,8 @@ Cycle, Entry and Note in it.
 ## The Popup form
 
 `web/new.html` is a small second page: choose Entry or Note, type, press
-Enter. An Entry has a title, a body and a Status that starts at `Todo`; a Note
-has only a body. Shift+Enter is a new line in the body. After a save the page
+Enter. An Entry has a title, a body, an optional Link and a Status that starts
+at `Todo`; a Note has only a body. Shift+Enter is a new line in the body. After a save the page
 goes to the main Plugin Page, `./`.
 
 It is the page a FirstMate Shortcut opens in a Popup. Going to `./` leaves
@@ -95,8 +99,8 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | `start_cycle`  | none                                        | one sentence, and `{ cycle, moved, said }` |
 | `get_cycle`    | optional `id`                               | that Cycle, or the current one, and its Entries |
 | `list_cycles`  | none                                        | `{ cycles }`, newest first, each with counts by Status |
-| `create_entry` | `title`, `status`, optional `body`          | the new Entry                    |
-| `update_entry` | `id`, and any of `title`, `body`, `status`  | the Entry as it now is           |
+| `create_entry` | `title`, `status`, optional `body`, `link`  | the new Entry                    |
+| `update_entry` | `id`, and any of `title`, `body`, `status`, `link` | the Entry as it now is    |
 | `move_entry`   | `id`, and `status`, `before` (optional)     | the Entry in its new place       |
 | `delete_entry` | `id`                                        | the Entry that is gone           |
 | `meeting_markdown` | none                                    | the Markdown, and `{ markdown, done, inReview, workingOn }` |
@@ -118,8 +122,14 @@ Entry at a time, full window, for the Statuses chosen at the top. It has a
 "Done" section — the Entries Done in the Cycle before the current one, then
 those already Done in the current one — an "In review" section, when
 anything is `In Review` — and a "Working on" section — the current Cycle's
-`In Progress` Entries, then its `Todo` ones, each in the order of its column. It lists titles only. Present after the Meeting's `start_cycle`
+`In Progress` Entries, then its `Todo` ones, each in the order of its column. It lists titles only;
+the title of an Entry with a Link is a Markdown link to it, `[title](link)`. Present after the Meeting's `start_cycle`
 has run; before, "Done" also holds what was reported last time.
+
+Every Entry a tool answers carries `link`: its address, or `null` when it has
+none. A `link` is an absolute `http:` or `https:` address of at most 2048
+characters, kept trimmed; any other is refused. On `update_entry`, a `link` of
+`null` or `""` takes the Link away.
 
 Any Status may go to any other. A `body` of `null` or `""` takes the body
 away. Bodies are Markdown; the Page shows them formatted with `web/markdown.js`,

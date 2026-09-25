@@ -236,6 +236,8 @@ export type Entry = {
   readonly title: string;
   readonly body: string | null;
   readonly status: 'Todo' | 'In Progress' | 'In Review' | 'Done';
+  /** The address of the issue or pull request it is about, or null. */
+  readonly link: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 };

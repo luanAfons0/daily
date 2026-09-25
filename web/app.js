@@ -144,12 +144,79 @@ function stepButton(entry) {
   return button;
 }
 
+// --- an Entry's Link -------------------------------------------------------
+
+/**
+ * The marks a Link can wear, one per kind of address, as inline SVG so the
+ * Page loads nothing (no CDN, no web font). Each one draws in currentColor,
+ * so it takes the colour of the theme.
+ */
+const LINK_MARKS = {
+  linear:
+    '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="currentColor">' +
+    '<path d="M2.886 4.18A11.982 11.982 0 0 1 11.99 0C18.624 0 24 5.376 24 12.009c0 ' +
+    '3.64-1.62 6.903-4.18 9.105L2.887 4.18ZM1.817 5.626l16.556 16.556c-.524.33-1.075.62-1.65' +
+    '.866L.951 7.277c.247-.575.537-1.126.866-1.65ZM.322 9.163l14.515 14.515c-.71.172-1.443' +
+    '.282-2.195.322L0 11.358a12 12 0 0 1 .322-2.195Zm-.17 4.862 9.823 9.824a12.02 12.02 0 0 ' +
+    '1-9.824-9.824Z"/></svg>',
+  github:
+    '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="currentColor">' +
+    '<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01' +
+    '-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53' +
+    '.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89' +
+    '-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32' +
+    '-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 ' +
+    '1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 ' +
+    '.21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>',
+  other:
+    '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" ' +
+    'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>' +
+    '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+};
+
+/** Which mark a Link wears, from the host it names. */
+function linkKind(address) {
+  const host = address.hostname.toLowerCase();
+  if (host === 'linear.app' || host.endsWith('.linear.app')) return 'linear';
+  if (host === 'github.com' || host === 'www.github.com') return 'github';
+  return 'other';
+}
+
+/**
+ * The small mark in the corner of an Entry card that opens its Link in a new
+ * tab. The Plugin Server keeps only http and https Links; the Page checks
+ * again, so no other address is ever put in an href. A Link it cannot read is
+ * not drawn.
+ */
+function linkMark(link) {
+  if (!link || !URL.canParse(link)) return null;
+  const address = new URL(link);
+  if (address.protocol !== 'http:' && address.protocol !== 'https:') return null;
+  const kind = linkKind(address);
+  const mark = el('a', {
+    class: 'entry-link ' + kind,
+    href: address.href,
+    target: '_blank',
+    rel: 'noopener noreferrer',
+    title: link,
+    'aria-label': 'Open the Link: ' + link,
+    draggable: 'false',
+  });
+  // A constant of this file, never anything the Entry holds.
+  mark.innerHTML = LINK_MARKS[kind];
+  return mark;
+}
+
 function entryCard(entry) {
   const edit = el('button', { class: 'act quiet small', type: 'button', text: 'Edit' });
   const remove = el('button', { class: 'act quiet small danger', type: 'button', text: 'Delete' });
   const status = STATUSES.find((known) => known.name === entry.status);
   const card = el('article', { class: 'card entry ' + (status ? status.dot : '') }, [
-    el('p', { class: 'entry-title', text: entry.title }),
+    el('div', { class: 'entry-head' }, [
+      el('p', { class: 'entry-title', text: entry.title }),
+      linkMark(entry.link),
+    ]),
     entry.body ? formatted(entry.body, 'entry-body') : null,
     el('div', { class: 'entry-foot' }, [
       stepButton(entry),
@@ -491,6 +558,9 @@ function openEditor(kind, item) {
   byId('ed-body').required = !entry;
   byId('ed-body').placeholder = entry ? 'Details, in Markdown. Optional.' : 'The Note, in Markdown.';
   byId('ed-statuses').hidden = !entry;
+  // A Link belongs to an Entry. A Note has none, so the field hides for one.
+  byId('ed-link-line').hidden = !entry;
+  byId('ed-link').value = entry ? item.link || '' : '';
   for (const choice of document.querySelectorAll('input[name="edit-status"]')) {
     choice.checked = entry && choice.value === item.status;
   }
@@ -537,6 +607,7 @@ async function saveEdit(event) {
         title,
         body,
         status: chosen ? chosen.value : item.status,
+        link: byId('ed-link').value,
       });
     } else {
       await call('update_note', { id: item.id, title, body });
@@ -558,6 +629,7 @@ byId('ed-cancel').addEventListener('click', () => byId('edit-dialog').close());
 byId('ed-close').addEventListener('click', () => byId('edit-dialog').close());
 byId('edit-dialog').addEventListener('close', () => (editing = null));
 sendOnShiftEnter(byId('ed-title'));
+sendOnShiftEnter(byId('ed-link'));
 sendOnShiftEnter(byId('ed-body'));
 
 // --- the Notes, laid out as masonry --------------------------------------

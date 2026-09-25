@@ -84,6 +84,11 @@ const STEPS: readonly string[] = [
   ALTER TABLE entries_next RENAME TO entries;
   CREATE INDEX entries_by_cycle ON entries (cycle_id);
   `,
+  // An Entry may carry a Link: the address of the issue or pull request it is
+  // about. Every Entry there already was has none.
+  `
+  ALTER TABLE entries ADD COLUMN link TEXT;
+  `,
 ];
 
 /**

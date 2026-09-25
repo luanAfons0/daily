@@ -3,7 +3,7 @@
  * is being worked on. In review is said only when something is waiting.
  *
  * It answers the two questions of the Meeting and nothing more, so it lists
- * titles, not bodies. It is read after the Meeting's `start_cycle` has run, so
+ * titles, not bodies; a title with a Link is a Markdown link to it. It is read after the Meeting's `start_cycle` has run, so
  * "Done" is what was finished in the Cycle before the current one, and
  * whatever is already Done in the current one. Pressed before that run, it
  * also shows what was reported last time; that is accepted.
@@ -62,7 +62,23 @@ export function meetingMarkdown(store: Store): MeetingMarkdown {
 /** One bullet per Entry, or one that says there is none. */
 function listed(entries: readonly Entry[]): string[] {
   if (entries.length === 0) return ['- Nothing.'];
-  return entries.map((entry) => `- ${oneLine(entry.title)}`);
+  return entries.map((entry) => `- ${named(entry)}`);
+}
+
+/** What a Link may hold that would end a Markdown link, and how it is written. */
+const ESCAPED: Readonly<Record<string, string>> = { ' ': '%20', '(': '%28', ')': '%29' };
+
+/**
+ * An Entry as the Meeting names it: its title, as a link to its Link when it
+ * has one. The brackets of the title are escaped and the address is kept in
+ * one piece, so neither can break the link.
+ */
+function named(entry: Entry): string {
+  const title = oneLine(entry.title);
+  if (entry.link === null) return title;
+  const text = title.replace(/[\\[\]]/g, (found) => `\\${found}`);
+  const address = entry.link.replace(/[ ()]/g, (found) => ESCAPED[found] ?? found);
+  return `[${text}](${address})`;
 }
 
 /** A title on one line, so it can never break the list it is in. */

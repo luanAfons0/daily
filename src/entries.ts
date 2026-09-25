@@ -1,6 +1,7 @@
 /**
  * An Entry: one thing you work on, with a Status, a title and an optional
- * Markdown body. It belongs to exactly one Cycle at a time.
+ * Markdown body, and an optional Link. It belongs to exactly one Cycle at a
+ * time.
  *
  * Every rule about where an Entry lives is kept here, in the write that
  * changes it, so that no caller — the Page, Scheduler or another Plugin — can
@@ -23,6 +24,8 @@ export type Entry = {
   /** Markdown, or null when there is none. */
   readonly body: string | null;
   readonly status: Status;
+  /** The address of the issue or pull request it is about, or null. */
+  readonly link: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 };
@@ -33,11 +36,12 @@ type EntryRow = {
   title: string;
   body: string | null;
   status: Status;
+  link: string | null;
   created_at: string;
   updated_at: string;
 };
 
-const COLUMNS = 'id, cycle_id, title, body, status, created_at, updated_at';
+const COLUMNS = 'id, cycle_id, title, body, status, link, created_at, updated_at';
 
 function entryOf(row: EntryRow): Entry {
   return {
@@ -46,6 +50,7 @@ function entryOf(row: EntryRow): Entry {
     title: row.title,
     body: row.body,
     status: row.status,
+    link: row.link,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -80,23 +85,40 @@ export function entryById(store: Store, id: number): Entry {
 export function createEntry(
   store: Store,
   cycleId: number,
-  fields: { readonly title: string; readonly body: string | null; readonly status: Status },
+  fields: {
+    readonly title: string;
+    readonly body: string | null;
+    readonly status: Status;
+    readonly link: string | null;
+  },
 ): Entry {
   const at = now();
   const done = store
     .prepare(
-      'INSERT INTO entries (cycle_id, title, body, status, position, created_at, updated_at) ' +
-        'VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO entries ' +
+        '(cycle_id, title, body, status, link, position, created_at, updated_at) ' +
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     )
-    .run(cycleId, fields.title, fields.body, fields.status, lastPosition(store), at, at);
+    .run(
+      cycleId,
+      fields.title,
+      fields.body,
+      fields.status,
+      fields.link,
+      lastPosition(store),
+      at,
+      at,
+    );
   return entryById(store, Number(done.lastInsertRowid));
 }
 
-/** What a caller may change about an Entry: any of the three, at least one. */
+/** What a caller may change about an Entry: any of the four, at least one. */
 export type EntryChange = {
   readonly title?: string;
   readonly body?: string | null;
   readonly status?: Status;
+  /** A new Link, or null to take it away. */
+  readonly link?: string | null;
 };
 
 /**
@@ -119,14 +141,15 @@ export function updateEntry(
     title: change.title ?? before.title,
     body: change.body === undefined ? before.body : change.body,
     status: change.status ?? before.status,
+    link: change.link === undefined ? before.link : change.link,
   };
   const cycleId = after.status === 'Done' ? before.cycleId : currentCycleId();
   store
     .prepare(
-      'UPDATE entries SET cycle_id = ?, title = ?, body = ?, status = ?, updated_at = ? ' +
-        'WHERE id = ?',
+      'UPDATE entries SET cycle_id = ?, title = ?, body = ?, status = ?, link = ?, ' +
+        'updated_at = ? WHERE id = ?',
     )
-    .run(cycleId, after.title, after.body, after.status, now(), id);
+    .run(cycleId, after.title, after.body, after.status, after.link, now(), id);
   if (after.status !== before.status) {
     store.prepare('UPDATE entries SET position = ? WHERE id = ?').run(lastPosition(store), id);
   }
@@ -203,6 +226,38 @@ export function checkBody(tool: string, given: unknown): string | null {
     throw badInput(`${tool} takes "body" as Markdown text, or leaves it out.`);
   }
   return given.trim() === '' ? null : given;
+}
+
+/** The longest Link kept. An address longer than this is not one a person pasted. */
+const LINK_MAX = 2048;
+
+/**
+ * A Link as given: an absolute http: or https: address, trimmed, or null for
+ * none. An empty Link is none. Any other scheme is refused, because the Page
+ * opens the Link on a click, and a `javascript:` address there would run.
+ */
+export function checkLink(tool: string, given: unknown): string | null {
+  if (given === undefined || given === null) return null;
+  if (typeof given !== 'string') {
+    throw badInput(`${tool} takes "link" as an http or https address, or leaves it out.`);
+  }
+  const link = given.trim();
+  if (link === '') return null;
+  if (link.length > LINK_MAX) {
+    throw badInput(`${tool} takes a "link" of at most ${LINK_MAX} characters.`);
+  }
+  const address = URL.canParse(link) ? new URL(link) : null;
+  if (
+    address === null ||
+    (address.protocol !== 'http:' && address.protocol !== 'https:') ||
+    address.hostname === ''
+  ) {
+    throw badInput(
+      `${tool} needs "link" as a whole http or https address, such as ` +
+        `https://github.com/owner/repo/issues/1, and was given ${JSON.stringify(link)}.`,
+    );
+  }
+  return link;
 }
 
 /** A Status as given, or a sentence that names the three there are. */

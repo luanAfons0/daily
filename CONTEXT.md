@@ -12,9 +12,14 @@ and this file never redefines one.
 ## Language
 
 **Entry**:
-One thing you work on. It has a Status, a title and an optional body, and it
-belongs to exactly one Cycle at a time.
+One thing you work on. It has a Status, a title, an optional body and an
+optional Link, and it belongs to exactly one Cycle at a time.
 _Avoid_: daily note, task, item, issue, card
+
+**Link**:
+The address of the issue or pull request an Entry is about, in Linear, GitHub
+or elsewhere. An Entry has one Link or none. A Note has no Link.
+_Avoid_: url, task link, ticket, issue link
 
 **Note**:
 Free text you keep. It has no Status and belongs to no Cycle, so it never

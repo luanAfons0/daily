@@ -200,3 +200,21 @@ test('the Popup keeps the keys of the Page: Shift+Enter saves, Enter is a new li
   assert.ok(!/event\.key === 'Enter' && !event\.shiftKey/.test(code), 'Enter alone still saves');
   assert.match(html, /Shift\+Enter saves/);
 });
+
+test('an Entry card opens its Link in a new tab, and the click is left to the Link', async () => {
+  const code = await readFile(join(WEB, 'app.js'), 'utf8');
+
+  assert.match(code, /target: '_blank'/);
+  assert.match(code, /rel: 'noopener noreferrer'/);
+  assert.match(code, /address\.protocol !== 'http:' && address\.protocol !== 'https:'/);
+  assert.ok(!/<svg[^>]*\shref=|<use\b|<image\b/.test(code), 'a mark loads something');
+  assert.match(code, /event\.target\.closest\('a, /);
+});
+
+test('an Entry takes a Link in the edit dialog and in the Popup form', async () => {
+  const page = await readFile(join(WEB, 'index.html'), 'utf8');
+  const popup = await readFile(join(WEB, 'new.html'), 'utf8');
+
+  assert.match(page, /<input[^>]*id="ed-link"[^>]*type="url"/);
+  assert.match(popup, /<input[^>]*id="q-link"[^>]*type="url"/);
+});
