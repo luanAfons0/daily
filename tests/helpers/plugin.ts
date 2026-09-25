@@ -10,7 +10,7 @@
  *
  * The Host starts a Plugin Server in the Plugin's own directory, so a test
  * gives it a temporary one. The code still comes from this repository; only
- * the directory the Plugin keeps `daily.db` in is temporary.
+ * the directory the Plugin keeps `worklog.db` in is temporary.
  */
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';

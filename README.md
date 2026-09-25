@@ -64,8 +64,10 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 - A **Note** is free Markdown text. It has no Status and belongs to no Cycle,
   so it never moves. Notes are listed newest first.
 
-Everything lives in one file, `daily.db`, in the Plugin directory. Git ignores
-it. Daily starts empty.
+Everything lives in one file, `worklog.db`, in the Plugin directory. Git ignores
+it. Daily starts empty. A Plugin directory from before the rename to Worklog
+holds `daily.db` instead; the first start renames it to `worklog.db`, with every
+Cycle, Entry and Note in it.
 
 ## The Popup form
 

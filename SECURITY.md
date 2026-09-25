@@ -3,7 +3,7 @@
 ## What is at stake
 
 Daily runs as you, inside FirstMate, and keeps your own work notes: every
-Entry and every Note you ever wrote, in one SQLite file, `daily.db`, in its
+Entry and every Note you ever wrote, in one SQLite file, `worklog.db`, in its
 own Plugin directory. Those notes can name customers, colleagues and
 problems you would not post in public.
 
@@ -25,7 +25,7 @@ Bugs worth reporting privately:
   or that makes the Plugin read or write outside its own directory.
 - A Page that loads anything from outside the Host.
 - Anything that loses Entries or Notes, or writes them anywhere but
-  `daily.db`.
+  `worklog.db`.
 
 ## Supported versions
 
@@ -55,4 +55,4 @@ confirmed.
   Bus. Report those to
   [FirstMate](https://github.com/luanAfons0/FirstMate/blob/main/SECURITY.md).
 - Anything that needs an attacker who can already run commands as you, or
-  read your `daily.db`. At that point your notes are theirs anyway.
+  read your `worklog.db`. At that point your notes are theirs anyway.

@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Your Entries and Notes are your own work notes. Leave their text out,
-        or replace it, unless the text is the bug. Never attach `daily.db`,
+        or replace it, unless the text is the bug. Never attach `worklog.db`,
         and never paste FirstMate's token or `runtime.json`.
 
         If this is a security problem, do not file it here. See

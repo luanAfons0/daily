@@ -1,5 +1,5 @@
 /**
- * The one SQLite file, `daily.db`, where every Cycle, Entry and Note lives
+ * The one SQLite file, `worklog.db`, where every Cycle, Entry and Note lives
  * (ADR-0002).
  *
  * The file is in the Plugin's own directory, which is where the Host starts
@@ -7,13 +7,23 @@
  * `PRAGMA user_version`: opening an older file moves it up to the current
  * version, one step at a time, and a newer file than this code knows is
  * refused rather than guessed at.
+ *
+ * Before the Plugin was called Worklog, the file was `daily.db`. A directory
+ * from then still holds it, and start-up renames it before it opens anything.
  */
+import { existsSync, renameSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 /** Where the data lives, relative to the Plugin directory. */
-export const FILE = 'daily.db';
+export const FILE = 'worklog.db';
 
-/** The Store: one open connection to `daily.db`. */
+/** Where the data lived before the Plugin was called Worklog. */
+const OLD_FILE = 'daily.db';
+
+/** The files SQLite keeps beside the data file, each named after it. */
+const BESIDE: readonly string[] = ['', '-wal', '-shm', '-journal'];
+
+/** The Store: one open connection to `worklog.db`. */
 export type Store = DatabaseSync;
 
 /**
@@ -76,7 +86,24 @@ const STEPS: readonly string[] = [
   `,
 ];
 
-/** Open `daily.db`, and bring it up to the current version. */
+/**
+ * Rename an old `daily.db`, and each file beside it, to `worklog.db`.
+ *
+ * It is a rename, never a copy, so no stale second copy of anyone's Notes is
+ * left on disk. The content does not change, which is why this is not one of
+ * the STEPS. When `worklog.db` is there already, it is the data, and both files
+ * are left alone.
+ */
+export function renameOldFile(): void {
+  if (existsSync(FILE) || !existsSync(OLD_FILE)) return;
+  // The data file goes last: until it moves, a start that fails halfway
+  // through finds it where it was and tries again.
+  for (const suffix of [...BESIDE].reverse()) {
+    if (existsSync(OLD_FILE + suffix)) renameSync(OLD_FILE + suffix, FILE + suffix);
+  }
+}
+
+/** Open `worklog.db`, and bring it up to the current version. */
 export function openStore(path: string = FILE): Store {
   const store = new DatabaseSync(path);
   store.exec('PRAGMA foreign_keys = ON');

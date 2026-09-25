@@ -5,6 +5,13 @@ node_modules/
 
 # The Plugin's own data. When this repository is also the Plugin directory the
 # Host runs, this is this machine's Entries and Notes, not the project's.
+worklog.db
+worklog.db-journal
+worklog.db-wal
+worklog.db-shm
+
+# The same data, from before the Plugin was called Worklog. Start-up renames
+# it, but a directory that has not started since still holds it.
 daily.db
 daily.db-journal
 daily.db-wal

@@ -50,8 +50,8 @@ new enough. It is the one environment variable.
 ```
 mcp            the executable the Host runs: find a Node 24, run src/main.ts.
 src/           the Plugin Server. Every file is one job.
-  main.ts      start-up: open daily.db, serve the tools.
-  store.ts     daily.db: open it, move it up to the current schema version.
+  main.ts      start-up: open worklog.db, serve the tools.
+  store.ts     worklog.db: open it, move it up to the current schema version.
   cycles.ts    a Cycle: the current one, the first one started by itself, and
                start_cycle, which moves every Entry that is not Done, and the
                list of every Cycle there ever was.
@@ -72,8 +72,8 @@ docs/adr/      the decisions that are expensive to reverse.
 docs/agents/   how an agent works in this repo. See "Agent skills" below.
 ```
 
-`daily.db` is this machine's Entries and Notes, not the project's. Git ignores
-it.
+`worklog.db` is this machine's Entries and Notes, not the project's. Git ignores
+it. Start-up renames an old `daily.db` to it, once, before the Store opens it.
 
 ## Code style
 
@@ -101,7 +101,7 @@ it.
 - **The Plugin Server**: `tests/helpers/plugin.ts` spawns the real `mcp`
   against a temporary Plugin directory and speaks to it exactly as the Host
   does. A test sees what the Host sees: JSON-RPC lines on stdout,
-  diagnostics on stderr, the exit code, and `daily.db` in the directory.
+  diagnostics on stderr, the exit code, and `worklog.db` in the directory.
 - **The Page as bytes**: `tests/page.test.ts` reads `web/` off disk, because
   no test drives a browser. Keep every path relative, every asset beside the
   page, and every `byId` declared.
@@ -133,7 +133,7 @@ it.
 - Adding a dependency of any kind.
 - Changing the name, input or output of a tool: they are the contract with
   the Page, Scheduler and every Plugin with a Grant.
-- A schema change to `daily.db`. It is a new step at the end of `STEPS` in
+- A schema change to `worklog.db`. It is a new step at the end of `STEPS` in
   `src/store.ts`, never an edit to a step that shipped.
 - Anything that reverses an ADR.
 - Anything that writes inside `~/.firstmate`, or restarts the Host.
@@ -145,7 +145,7 @@ it.
 - Copy an Entry into a new Cycle. It moves; it is one Entry.
 - Give a Note a Status or a Cycle, or move one.
 - Load anything from a CDN, or name an absolute path in the Page.
-- Print or commit a real `daily.db`, FirstMate's token or `runtime.json`.
+- Print or commit a real `worklog.db`, FirstMate's token or `runtime.json`.
 
 ## Agent skills
 
