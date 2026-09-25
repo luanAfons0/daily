@@ -106,7 +106,7 @@ test('the sentence says 1 Entry, and no Entries, the way a person would', async 
   assert.match(textOf(await plugin.call('start_cycle')), /and moved 1 Entry into it\.$/);
 });
 
-test('the Cycle is named on the clock of the machine Daily runs on', async (t) => {
+test('the Cycle is named on the clock of the machine Worklog runs on', async (t) => {
   const plugin = await startedAndShaken(t, { env: { TZ: 'Asia/Tokyo' } });
 
   const answer = await plugin.call('start_cycle');

@@ -27,7 +27,7 @@ ADR that is quietly overridden is worse than one that is argued with.
 - [ ] New behaviour has a test in `tests/`, through `tests/helpers/plugin.ts`
       or by reading `web/` off disk, and not by importing a module of `src/`.
 - [ ] A change to `web/` was tried by hand in a running FirstMate, against a
-      clone that is not my real Daily.
+      clone that is not my real Worklog.
 - [ ] `README.md` is updated, if a tool, its input or output, or an
       environment variable changed.
 - [ ] A schema change is a new step at the end of `STEPS`, not an edit to one

@@ -2,7 +2,7 @@
 
 ## What is at stake
 
-Daily runs as you, inside FirstMate, and keeps your own work notes: every
+Worklog runs as you, inside FirstMate, and keeps your own work notes: every
 Entry and every Note you ever wrote, in one SQLite file, `worklog.db`, in its
 own Plugin directory. Those notes can name customers, colleagues and
 problems you would not post in public.
@@ -29,14 +29,14 @@ Bugs worth reporting privately:
 
 ## Supported versions
 
-`main` only. Daily is installed from its git URL, so the fix for any problem
+`main` only. Worklog is installed from its git URL, so the fix for any problem
 is the next commit on `main`.
 
 ## How to report
 
 Use GitHub's private vulnerability reporting: open the
-[Security tab](https://github.com/luanAfons0/daily/security/advisories) of
-`luanAfons0/daily` and choose **Report a vulnerability**. That opens a private
+[Security tab](https://github.com/luanAfons0/worklog/security/advisories) of
+`luanAfons0/worklog` and choose **Report a vulnerability**. That opens a private
 advisory that only the maintainers can read.
 
 Do not open a public issue for a security problem.
@@ -49,7 +49,7 @@ confirmed.
 
 ## Out of scope
 
-- A Plugin you gave a Grant to Daily doing something you did not want with
+- A Plugin you gave a Grant to Worklog doing something you did not want with
   your Entries and Notes. A Grant is your decision to trust that Plugin.
 - Anything in FirstMate itself: the Host, its checks, its token or its Tool
   Bus. Report those to

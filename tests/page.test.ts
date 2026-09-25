@@ -77,7 +77,7 @@ for (const { page, script } of PAGES) {
 
     assert.ok(paths.includes('rpc.js'), `${page} does not load rpc.js`);
     assert.ok(paths.indexOf('rpc.js') < paths.indexOf(script), 'rpc.js loads too late');
-    assert.ok(!code.includes('/p/daily'), `${script} names the Plugin's address by hand`);
+    assert.ok(!code.includes('/p/worklog'), `${script} names the Plugin's address by hand`);
   });
 }
 
@@ -86,7 +86,7 @@ test('rpc.js calls the tools over the relative rpc address, never an absolute on
 
   assert.match(code, /const RPC = 'rpc';/);
   assert.match(code, /method: 'tools\/call'/);
-  assert.ok(!code.includes('/p/daily'), "rpc.js names the Plugin's address by hand");
+  assert.ok(!code.includes('/p/worklog'), "rpc.js names the Plugin's address by hand");
 });
 
 test('the Popup form goes to the main Plugin Page after a save, by a relative path', async () => {
@@ -144,16 +144,24 @@ test('the Page asks before a delete in its own dialog, never in the browser conf
   assert.match(html, /<dialog[^>]*id="confirm-dialog"/);
 });
 
+test('the Plugin Page and the Popup form carry Worklog in their titles', async () => {
+  const page = await readFile(join(WEB, 'index.html'), 'utf8');
+  const popup = await readFile(join(WEB, 'new.html'), 'utf8');
+
+  assert.match(page, /<title>Worklog<\/title>/);
+  assert.match(popup, /<title>Worklog — add<\/title>/);
+});
+
 test('the Popup tells the Plugin Page what it saved, so the Page draws it without a reload', async () => {
   const popup = await readFile(join(WEB, 'new.js'), 'utf8');
   const page = await readFile(join(WEB, 'app.js'), 'utf8');
 
-  assert.match(popup, /new BroadcastChannel\('daily'\)/);
+  assert.match(popup, /new BroadcastChannel\('worklog'\)/);
   assert.ok(
     popup.indexOf('.postMessage(') < popup.lastIndexOf("location.assign('./');"),
     'the Popup leaves before it says what it saved',
   );
-  assert.match(page, /new BroadcastChannel\('daily'\)/);
+  assert.match(page, /new BroadcastChannel\('worklog'\)/);
 });
 
 test('an Entry and a Note are edited in one dialog, so the cards around them do not move', async () => {

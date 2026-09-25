@@ -1,5 +1,5 @@
 {
-  "name": "daily",
+  "name": "worklog",
   "version": "0.1.0",
   "description": "A FirstMate Plugin that keeps what you work on from one Meeting to the next.",
   "license": "MIT",

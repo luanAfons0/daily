@@ -119,7 +119,7 @@ test('a Status that is not one of the four is refused with a sentence naming the
 });
 
 test('a daily.db from before In Review moves up with every Entry, its place and its Status', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'daily-v3-'));
+  const directory = await mkdtemp(join(tmpdir(), 'worklog-v3-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const old = new DatabaseSync(join(directory, 'daily.db'));
   old.exec(`

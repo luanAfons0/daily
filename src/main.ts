@@ -19,7 +19,7 @@ const store = (() => {
     renameOldFile();
     return openStore();
   } catch (fault) {
-    process.stderr.write(`daily: ${sentenceFor(fault)}\n`);
+    process.stderr.write(`worklog: ${sentenceFor(fault)}\n`);
     return process.exit(1);
   }
 })();

@@ -74,7 +74,7 @@ export type Started = {
 
 /** A temporary Plugin directory for one test, removed when the test ends. */
 export async function makeDirectory(t: TestContext): Promise<string> {
-  const directory = await mkdtemp(join(tmpdir(), 'daily-test-'));
+  const directory = await mkdtemp(join(tmpdir(), 'worklog-test-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   return directory;
 }

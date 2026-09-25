@@ -1,4 +1,4 @@
-/* One tool call on Daily's own Plugin Server, for every page in web/. It
+/* One tool call on Worklog's own Plugin Server, for every page in web/. It
    defines one global: call(name, args) → the tool's structured answer. */
 'use strict';
 
@@ -30,13 +30,13 @@ async function call(name, args) {
 
   if (response.status === STOPPED) {
     throw new Error(
-      'Daily’s Plugin Server is Stopped. The reason is in the journal: ' +
+      'Worklog’s Plugin Server is Stopped. The reason is in the journal: ' +
         'journalctl --user -u firstmate -f. The Host never starts it again on its own, ' +
         'so restart the Host once it is fixed.',
     );
   }
   if (response.status === NO_PLUGIN_SERVER) {
-    throw new Error('The Host found no Plugin Server for Daily, so it has nothing to show.');
+    throw new Error('The Host found no Plugin Server for Worklog, so it has nothing to show.');
   }
   if (!response.ok) {
     throw new Error('The Host answered ' + response.status + ' for this call.');

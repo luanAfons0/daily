@@ -277,7 +277,7 @@ async function save(event) {
     }
     // Tell the main Plugin Page, which may be open under this Popup, to draw
     // what was just saved.
-    new BroadcastChannel('daily').postMessage('saved');
+    new BroadcastChannel('worklog').postMessage('saved');
     location.assign('./');
   } catch (fault) {
     say(fault.message);

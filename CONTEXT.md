@@ -1,6 +1,6 @@
-# Daily
+# Worklog
 
-Daily is a FirstMate Plugin. It keeps the things you work on between one team
+Worklog is a FirstMate Plugin. It keeps the things you work on between one team
 meeting and the next, and the free notes that belong to no meeting.
 
 It is a Plugin like any other, so it borrows FirstMate's words unchanged —
@@ -28,12 +28,12 @@ someone else to look at it.
 _Avoid_: state, outcome, progress
 
 **Meeting**:
-The recurring team meeting. Scheduler knows when it happens; Daily does not.
+The recurring team meeting. Scheduler knows when it happens; Worklog does not.
 _Avoid_: daily, standup, Team Daily
 
 **Cycle**:
 The time from one Meeting to the next. It is named by the moment it started,
-because Daily cannot know when the next Meeting will be. Every call to start a
+because Worklog cannot know when the next Meeting will be. Every call to start a
 Cycle starts one.
 _Avoid_: day, period, sprint, Reporting Period
 
@@ -49,7 +49,7 @@ _Avoid_: day, period, sprint, Reporting Period
 - A new Entry goes into the current Cycle and nowhere else. An earlier Cycle is
   history.
 - There is always a current Cycle. The first one starts by itself the first
-  time Daily needs one.
+  time Worklog needs one.
 - A Note never moves.
 
 ## Flagged ambiguities
@@ -57,3 +57,6 @@ _Avoid_: day, period, sprint, Reporting Period
 - "Daily note" was used for an Entry. It is not a kind of Note: a Note has no
   Status. Resolved: **Entry** and **Note**.
 - "Daily" is the meeting in everyday speech. It is not a word for an Entry.
+- The Plugin itself was called Daily, the word this file tells you to avoid
+  for the Meeting, so "open Daily" could mean the Plugin Page or the Meeting.
+  Resolved: the Plugin is **Worklog**, and "daily" stays on the *Avoid* list.

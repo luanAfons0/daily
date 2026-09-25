@@ -1,6 +1,6 @@
-# Daily
+# Worklog
 
-Daily is a FirstMate Plugin. It keeps what you work on from one Meeting to the
+Worklog is a FirstMate Plugin. It keeps what you work on from one Meeting to the
 next, and the free Notes that belong to no Meeting. It is a Plugin Server with
 one SQLite file behind it, and a Plugin Page.
 
@@ -28,7 +28,7 @@ Run every command from the repository root.
 | `npm install && npx tsc --noEmit`   | Check the types. `npm run typecheck` is the same. |
 | `./mcp`                             | The Plugin Server, as the Host runs it.    |
 
-`DAILY_NODE` names the Node that `mcp` runs, when the Host's `PATH` has none
+`WORKLOG_NODE` names the Node that `mcp` runs, when the Host's `PATH` has none
 new enough. It is the one environment variable.
 
 `npm test` and `npm run typecheck` must both pass before you call work done.
@@ -110,7 +110,7 @@ it. Start-up renames an old `daily.db` to it, once, before the Store opens it.
 
 ## Git workflow
 
-- Branch `main`. The remote is GitHub: `luanAfons0/daily`, so use `gh`.
+- Branch `main`. The remote is GitHub: `luanAfons0/worklog`, so use `gh`.
 - A commit subject is one imperative sentence in the project's own words, with
   no prefix, no scope and no ticket number: `Add an Entry and see it in the
   current Cycle`.
@@ -140,7 +140,7 @@ it. Start-up renames an old `daily.db` to it, once, before the Store opens it.
 
 🚫 **Never**
 
-- Give Daily a clock. A Cycle starts when its tool is called (ADR-0001).
+- Give Worklog a clock. A Cycle starts when its tool is called (ADR-0001).
 - Make a call to start a Cycle decide to do nothing. Every call starts one.
 - Copy an Entry into a new Cycle. It moves; it is one Entry.
 - Give a Note a Status or a Cycle, or move one.
@@ -151,7 +151,7 @@ it. Start-up renames an old `daily.db` to it, once, before the Store opens it.
 
 ### Issue tracker
 
-Issues live as GitHub issues in `luanAfons0/daily`, driven by the `gh` CLI.
+Issues live as GitHub issues in `luanAfons0/worklog`, driven by the `gh` CLI.
 See [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
 
 ### Triage labels

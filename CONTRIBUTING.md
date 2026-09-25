@@ -1,6 +1,6 @@
-# Contributing to Daily
+# Contributing to Worklog
 
-Daily is a FirstMate Plugin that keeps what you work on from one Meeting to
+Worklog is a FirstMate Plugin that keeps what you work on from one Meeting to
 the next, and the free Notes that belong to no Meeting. It holds a person's
 own work notes, and the Meeting is read from them in front of a team, so a
 mistake here loses somebody's week or shows it wrong in public.
@@ -25,19 +25,19 @@ mistake here loses somebody's week or shows it wrong in public.
 ## What you need
 
 Node 24 or newer, npm and Git. Node 24 runs the TypeScript directly, so there
-is nothing to build, and it ships `node:sqlite`, where Daily keeps its data
+is nothing to build, and it ships `node:sqlite`, where Worklog keeps its data
 (ADR-0002). For changes to the Page, a running
 [FirstMate](https://github.com/luanAfons0/FirstMate) too.
 
-Daily is developed and tested on Linux and on WSL Debian, where FirstMate
+Worklog is developed and tested on Linux and on WSL Debian, where FirstMate
 runs. macOS and native Windows are untried rather than unsupported. If you run
 it there, open an issue with what breaks.
 
 ## Get the code
 
 ```bash
-git clone https://github.com/luanAfons0/daily.git
-cd daily
+git clone https://github.com/luanAfons0/worklog.git
+cd worklog
 npm install
 npm test
 ```
@@ -73,17 +73,17 @@ A test name is a sentence about behaviour, not about code:
 
 Never point a half-finished change at your real Entries and Notes. The Plugin
 keeps `worklog.db` in the directory it runs in, so register a clone that is not
-the directory your real Daily runs from:
+the directory your real Worklog runs from:
 
 1. Install FirstMate: <https://github.com/luanAfons0/FirstMate>.
 2. From the FirstMate repository, register your clone:
-   `node src/cli.ts add daily-dev /absolute/path/to/your/clone`.
-3. Restart the Host and open `http://127.0.0.1:4747/p/daily-dev/`.
+   `node src/cli.ts add worklog-dev /absolute/path/to/your/clone`.
+3. Restart the Host and open `http://127.0.0.1:4747/p/worklog-dev/`.
 
 The Host serves `web/` from the clone you registered, so an edit to the Page
 is one reload away. A change to `src/` needs the Host restarted, because the
 Host starts a Plugin Server once and never again on its own. When you are
-done, `node src/cli.ts remove daily-dev` and delete the clone's `worklog.db`.
+done, `node src/cli.ts remove worklog-dev` and delete the clone's `worklog.db`.
 
 ## How the code is written
 
@@ -102,7 +102,7 @@ done, `node src/cli.ts remove daily-dev` and delete the clone's `worklog.db`.
 
 Properties that a change may not weaken, however good the reason looks:
 
-- **Daily has no clock.** A Cycle starts when its tool is called, and every
+- **Worklog has no clock.** A Cycle starts when its tool is called, and every
   call starts one (ADR-0001).
 - An Entry moves into a new Cycle; it is never copied.
 - An Entry that is not `Done` is always in the current Cycle.
@@ -146,9 +146,9 @@ Plugin that holds a Grant.
 
 ## Issues
 
-Issues live in GitHub Issues for `luanAfons0/daily`. A bug report is most
+Issues live in GitHub Issues for `luanAfons0/worklog`. A bug report is most
 useful with the tool call and its answer, or what the Page showed, and the
-`daily:` lines from the journal. Never attach your `worklog.db`.
+`worklog:` lines from the journal. Never attach your `worklog.db`.
 
 Triage uses five labels: `needs-triage`, `needs-info`, `ready-for-agent`,
 `ready-for-human` and `wontfix`. See

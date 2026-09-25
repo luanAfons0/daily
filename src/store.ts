@@ -111,8 +111,8 @@ export function openStore(path: string = FILE): Store {
   const version = row.user_version;
   if (version > STEPS.length) {
     throw new Error(
-      `${path} is at schema version ${version}, and this Daily knows only up to ` +
-        `${STEPS.length}. Run a newer Daily, or restore an older copy of the file.`,
+      `${path} is at schema version ${version}, and this Worklog knows only up to ` +
+        `${STEPS.length}. Run a newer Worklog, or restore an older copy of the file.`,
     );
   }
   for (let step = version; step < STEPS.length; step += 1) {
