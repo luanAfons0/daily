@@ -9,14 +9,31 @@ when Scheduler says so and why the data is in SQLite.
 
 ## Install it
 
-Register the directory where it lives, and restart the Host:
+One command, from its git URL. The files land in FirstMate's Shelf, the Plugin
+is registered in the same step, and nothing it ships is run:
 
 ```sh
-node src/cli.ts add daily /absolute/path/to/daily   # in FirstMate
+firstmate install https://github.com/luanAfons0/daily.git daily
 systemctl --user restart firstmate
 ```
 
 Then open the Index Page, find `daily`, and open its Plugin Page.
+
+To let Scheduler start a Cycle at every Meeting, record a Grant from Scheduler
+to Daily and restart again. A Grant is one way and covers one pair:
+
+```sh
+firstmate grant scheduler daily
+systemctl --user restart firstmate
+```
+
+Developing it instead? Register the directory where it already lives:
+
+```sh
+node src/cli.ts add daily /absolute/path/to/daily   # in FirstMate
+```
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the rest.
 
 The Plugin Page has three tabs: **Cycle**, **Earlier Cycles** and **Notes**.
 The keys 1, 2 and 3 choose one, and N starts a new Entry.
@@ -110,3 +127,7 @@ a small renderer written for this Plugin, so the Page loads nothing from a CDN.
 
 `./mcp` is the Plugin Server, as the Host runs it: MCP over stdio. `npm test`
 runs every test; `npm run typecheck` checks the types.
+
+## Licence
+
+MIT. See [`LICENSE.md`](LICENSE.md).

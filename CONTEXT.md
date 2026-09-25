@@ -5,8 +5,9 @@ meeting and the next, and the free notes that belong to no meeting.
 
 It is a Plugin like any other, so it borrows FirstMate's words unchanged —
 Host, Plugin, Plugin Page, Plugin Server, Tool Bus, Grant, Stopped. They are
-defined once, in [`~/.first-mate/CONTEXT.md`](../.first-mate/CONTEXT.md), and
-this file never redefines one.
+defined once, in
+[FirstMate's `CONTEXT.md`](https://github.com/luanAfons0/FirstMate/blob/main/CONTEXT.md),
+and this file never redefines one.
 
 ## Language
 

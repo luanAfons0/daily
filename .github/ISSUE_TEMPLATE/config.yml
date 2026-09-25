@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem
+    url: https://github.com/luanAfons0/daily/security/advisories/new
+    about: Report it privately instead. Daily keeps your own work notes.
+  - name: The words this project uses
+    url: https://github.com/luanAfons0/daily/blob/main/CONTEXT.md
+    about: Entry, Note, Status, Meeting, Cycle.
+  - name: How to contribute
+    url: https://github.com/luanAfons0/daily/blob/main/CONTRIBUTING.md
+    about: Run the tests, try a change in FirstMate, open a pull request.
