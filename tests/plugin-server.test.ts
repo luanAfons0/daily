@@ -8,7 +8,7 @@ import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import { PROTOCOL_VERSION, startedAndShaken, startPluginServer } from './helpers/plugin.ts';
 
-/** Every tool Daily ships. The names are the contract with other Plugins. */
+/** Every tool Worklog ships. The names are the contract with other Plugins. */
 const TOOLS = [
   'create_entry',
   'create_note',
@@ -32,7 +32,7 @@ test('the Plugin Server answers the handshake', async (t) => {
   const result = answer.result as { protocolVersion: string; serverInfo: { name: string } };
   assert.equal(answer.error, undefined);
   assert.equal(result.protocolVersion, PROTOCOL_VERSION);
-  assert.equal(result.serverInfo.name, 'daily');
+  assert.equal(result.serverInfo.name, 'worklog');
 });
 
 test('it names every tool it ships, each with a schema for its arguments', async (t) => {
@@ -77,6 +77,7 @@ test('a line on stdin that is not JSON is one sentence on stderr, and the pipe s
   }
 
   assert.ok(plugin.output().includes('was not JSON'), `stderr said: ${plugin.output()}`);
+  assert.ok(plugin.output().startsWith('worklog: '), `stderr said: ${plugin.output()}`);
   assert.equal(plugin.lines().length, said + 1, 'the bad line was answered on stdout');
   assert.equal(answer.error, undefined);
 });

@@ -12,7 +12,7 @@ import { createInterface } from 'node:readline';
 export const PROTOCOL_VERSION = '2025-06-18';
 
 /** What this Plugin calls itself when the Host asks. */
-export const SERVER_INFO = { name: 'daily', version: '1.0.0' };
+export const SERVER_INFO = { name: 'worklog', version: '1.0.0' };
 
 /** JSON-RPC's own code for a method this Plugin Server does not have. */
 export const METHOD_NOT_FOUND = -32601;
@@ -66,7 +66,7 @@ export function serve(tools: readonly Tool[]): void {
     try {
       message = JSON.parse(line) as Message;
     } catch {
-      process.stderr.write('daily: a line on stdin was not JSON.\n');
+      process.stderr.write('worklog: a line on stdin was not JSON.\n');
       return;
     }
     // A message that names no method answers something this Plugin Server

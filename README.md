@@ -1,4 +1,4 @@
-# Daily
+# Worklog
 
 A FirstMate Plugin that keeps what you work on from one Meeting to the next,
 and the free Notes that belong to no Meeting.
@@ -13,24 +13,24 @@ One command, from its git URL. The files land in FirstMate's Shelf, the Plugin
 is registered in the same step, and nothing it ships is run:
 
 ```sh
-firstmate install https://github.com/luanAfons0/daily.git daily
+firstmate install https://github.com/luanAfons0/worklog.git worklog
 systemctl --user restart firstmate
 ```
 
-Then open the Index Page, find `daily`, and open its Plugin Page.
+Then open the Index Page, find `worklog`, and open its Plugin Page.
 
 To let Scheduler start a Cycle at every Meeting, record a Grant from Scheduler
-to Daily and restart again. A Grant is one way and covers one pair:
+to Worklog and restart again. A Grant is one way and covers one pair:
 
 ```sh
-firstmate grant scheduler daily
+firstmate grant scheduler worklog
 systemctl --user restart firstmate
 ```
 
 Developing it instead? Register the directory where it already lives:
 
 ```sh
-node src/cli.ts add daily /absolute/path/to/daily   # in FirstMate
+node src/cli.ts add worklog /absolute/path/to/worklog   # in FirstMate
 ```
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the rest.
@@ -43,7 +43,7 @@ saves it.
 
 It needs Node 24 or newer, for TypeScript with no build step and for
 `node:sqlite`. The Host's service `PATH` often has only an older Node, so `mcp`
-looks for one in this order: `DAILY_NODE`, `node` on `PATH`, then every Node
+looks for one in this order: `WORKLOG_NODE`, `node` on `PATH`, then every Node
 under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 
 ## What it keeps
@@ -52,7 +52,7 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
   and a Status — `Todo`, `In Progress`, `In Review` or `Done`.
 - A **Cycle** is the time from one Meeting to the next, named by the moment it
   started. A new Entry goes into the current Cycle. The first Cycle starts by
-  itself the first time Daily needs one.
+  itself the first time Worklog needs one.
 - When a Cycle starts, every Entry that is not `Done` moves into it with its
   Status unchanged. It is the same Entry, not a copy. `Done`
   Entries stay in the Cycle they were done in.
@@ -64,8 +64,10 @@ under nvm. With none, it says so in one sentence and the Plugin is Stopped.
 - A **Note** is free Markdown text. It has no Status and belongs to no Cycle,
   so it never moves. Notes are listed newest first.
 
-Everything lives in one file, `daily.db`, in the Plugin directory. Git ignores
-it. Daily starts empty.
+Everything lives in one file, `worklog.db`, in the Plugin directory. Git ignores
+it. Worklog starts empty. A Plugin directory from before the rename to Worklog
+holds `daily.db` instead; the first start renames it to `worklog.db`, with every
+Cycle, Entry and Note in it.
 
 ## The Popup form
 
@@ -76,11 +78,11 @@ goes to the main Plugin Page, `./`.
 
 It is the page a FirstMate Shortcut opens in a Popup. Going to `./` leaves
 the Popup's address, so the Popup hides by itself. In a normal browser, at
-`/p/daily/new.html`, it lands on the main page instead. Once the Shortcut work
+`/p/worklog/new.html`, it lands on the main page instead. Once the Shortcut work
 lands in FirstMate, bind it with:
 
 ```sh
-node src/cli.ts bind <keys> daily new.html   # in FirstMate
+node src/cli.ts bind <keys> worklog new.html   # in FirstMate
 ```
 
 ## Tools
@@ -104,10 +106,10 @@ A tool given bad input answers a JSON-RPC error with one sentence.
 | `delete_note`  | `id`                                        | the Note that is gone            |
 
 `start_cycle` is the tool a Scheduler Job calls at every Meeting, under a
-Grant from Scheduler to Daily. Every call starts exactly one Cycle
+Grant from Scheduler to Worklog. Every call starts exactly one Cycle
 (ADR-0001), and its text is one sentence, because a Scheduler Run keeps one:
 `Started the Cycle of Tue 23 Sep 10:00 and moved 4 Entries into it.` The
-moment is on the clock of the machine Daily runs on. The Page's **Start a new
+moment is on the clock of the machine Worklog runs on. The Page's **Start a new
 Cycle** button calls the same tool, after one question, for the day Scheduler
 did not.
 

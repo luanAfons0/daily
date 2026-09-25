@@ -1,6 +1,6 @@
-# Daily
+# Worklog
 
-Daily is a FirstMate Plugin. It keeps what you work on from one Meeting to the
+Worklog is a FirstMate Plugin. It keeps what you work on from one Meeting to the
 next, and the free Notes that belong to no Meeting. It is a Plugin Server with
 one SQLite file behind it, and a Plugin Page.
 
@@ -28,7 +28,7 @@ Run every command from the repository root.
 | `npm install && npx tsc --noEmit`   | Check the types. `npm run typecheck` is the same. |
 | `./mcp`                             | The Plugin Server, as the Host runs it.    |
 
-`DAILY_NODE` names the Node that `mcp` runs, when the Host's `PATH` has none
+`WORKLOG_NODE` names the Node that `mcp` runs, when the Host's `PATH` has none
 new enough. It is the one environment variable.
 
 `npm test` and `npm run typecheck` must both pass before you call work done.
@@ -50,8 +50,8 @@ new enough. It is the one environment variable.
 ```
 mcp            the executable the Host runs: find a Node 24, run src/main.ts.
 src/           the Plugin Server. Every file is one job.
-  main.ts      start-up: open daily.db, serve the tools.
-  store.ts     daily.db: open it, move it up to the current schema version.
+  main.ts      start-up: open worklog.db, serve the tools.
+  store.ts     worklog.db: open it, move it up to the current schema version.
   cycles.ts    a Cycle: the current one, the first one started by itself, and
                start_cycle, which moves every Entry that is not Done, and the
                list of every Cycle there ever was.
@@ -72,8 +72,8 @@ docs/adr/      the decisions that are expensive to reverse.
 docs/agents/   how an agent works in this repo. See "Agent skills" below.
 ```
 
-`daily.db` is this machine's Entries and Notes, not the project's. Git ignores
-it.
+`worklog.db` is this machine's Entries and Notes, not the project's. Git ignores
+it. Start-up renames an old `daily.db` to it, once, before the Store opens it.
 
 ## Code style
 
@@ -101,7 +101,7 @@ it.
 - **The Plugin Server**: `tests/helpers/plugin.ts` spawns the real `mcp`
   against a temporary Plugin directory and speaks to it exactly as the Host
   does. A test sees what the Host sees: JSON-RPC lines on stdout,
-  diagnostics on stderr, the exit code, and `daily.db` in the directory.
+  diagnostics on stderr, the exit code, and `worklog.db` in the directory.
 - **The Page as bytes**: `tests/page.test.ts` reads `web/` off disk, because
   no test drives a browser. Keep every path relative, every asset beside the
   page, and every `byId` declared.
@@ -110,7 +110,7 @@ it.
 
 ## Git workflow
 
-- Branch `main`. The remote is GitHub: `luanAfons0/daily`, so use `gh`.
+- Branch `main`. The remote is GitHub: `luanAfons0/worklog`, so use `gh`.
 - A commit subject is one imperative sentence in the project's own words, with
   no prefix, no scope and no ticket number: `Add an Entry and see it in the
   current Cycle`.
@@ -133,25 +133,25 @@ it.
 - Adding a dependency of any kind.
 - Changing the name, input or output of a tool: they are the contract with
   the Page, Scheduler and every Plugin with a Grant.
-- A schema change to `daily.db`. It is a new step at the end of `STEPS` in
+- A schema change to `worklog.db`. It is a new step at the end of `STEPS` in
   `src/store.ts`, never an edit to a step that shipped.
 - Anything that reverses an ADR.
 - Anything that writes inside `~/.firstmate`, or restarts the Host.
 
 🚫 **Never**
 
-- Give Daily a clock. A Cycle starts when its tool is called (ADR-0001).
+- Give Worklog a clock. A Cycle starts when its tool is called (ADR-0001).
 - Make a call to start a Cycle decide to do nothing. Every call starts one.
 - Copy an Entry into a new Cycle. It moves; it is one Entry.
 - Give a Note a Status or a Cycle, or move one.
 - Load anything from a CDN, or name an absolute path in the Page.
-- Print or commit a real `daily.db`, FirstMate's token or `runtime.json`.
+- Print or commit a real `worklog.db`, FirstMate's token or `runtime.json`.
 
 ## Agent skills
 
 ### Issue tracker
 
-Issues live as GitHub issues in `luanAfons0/daily`, driven by the `gh` CLI.
+Issues live as GitHub issues in `luanAfons0/worklog`, driven by the `gh` CLI.
 See [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
 
 ### Triage labels

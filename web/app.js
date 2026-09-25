@@ -1,4 +1,4 @@
-/* The Daily Plugin Page. Vanilla JavaScript, no build step and no framework,
+/* The Worklog Plugin Page. Vanilla JavaScript, no build step and no framework,
    talking to one same-origin address through call() in rpc.js. Everything it
    shows it learned by asking its own Plugin Server; it assumes nothing, and
    it keeps no data of its own. */
@@ -997,7 +997,7 @@ document.addEventListener('visibilitychange', () => {
 // never hears the change above. The Popup says what it saved on a channel the
 // two pages share, and this page draws it at once. Getting the focus back is
 // the same news, for a window where the channel does not reach.
-new BroadcastChannel('daily').addEventListener('message', refresh);
+new BroadcastChannel('worklog').addEventListener('message', refresh);
 window.addEventListener('focus', refresh);
 
 void load();

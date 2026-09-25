@@ -1,6 +1,6 @@
 /**
  * The tools this Plugin ships: one for each thing a person, the Page or
- * another Plugin can ask Daily to do. Their names are the contract between the
+ * another Plugin can ask Worklog to do. Their names are the contract between the
  * Page, Scheduler and every other Plugin with a Grant (FirstMate ADR-0009).
  *
  * Every tool answers the same data twice — as text, for whoever reads it in a

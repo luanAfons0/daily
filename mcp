@@ -10,10 +10,10 @@
 # it, so `#!/usr/bin/env node` finds whichever Node the distribution ships —
 # and an old one fails with "Unknown file extension .ts", which says nothing
 # about versions to whoever has to read it. Node 24 is also what brings
-# node:sqlite, where Daily keeps its data (ADR-0002).
+# node:sqlite, where Worklog keeps its data (ADR-0002).
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
-for node in ${DAILY_NODE:+"$DAILY_NODE"} \
+for node in ${WORKLOG_NODE:+"$WORKLOG_NODE"} \
             "$(command -v node 2>/dev/null)" \
             "$HOME"/.nvm/versions/node/*/bin/node; do
   [ -x "$node" ] || continue
@@ -22,5 +22,5 @@ for node in ${DAILY_NODE:+"$DAILY_NODE"} \
   exec "$node" "$here/src/main.ts"
 done
 
-echo "daily: no Node 24 or newer was found, and this Plugin is TypeScript that Node runs with no build step. Set DAILY_NODE to a Node 24, or start the Host with one on its PATH." >&2
+echo "worklog: no Node 24 or newer was found, and this Plugin is TypeScript that Node runs with no build step. Set WORKLOG_NODE to a Node 24, or start the Host with one on its PATH." >&2
 exit 1

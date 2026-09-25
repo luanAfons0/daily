@@ -170,7 +170,7 @@ test('a title that is not text is refused in one sentence that names it', async 
 });
 
 test('a daily.db from before titles moves up, and its Notes come out untitled', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'daily-v1-'));
+  const directory = await mkdtemp(join(tmpdir(), 'worklog-v1-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const old = new DatabaseSync(join(directory, 'daily.db'));
   old.exec(`

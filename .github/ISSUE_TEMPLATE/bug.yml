@@ -6,18 +6,18 @@ body:
     attributes:
       value: |
         Your Entries and Notes are your own work notes. Leave their text out,
-        or replace it, unless the text is the bug. Never attach `daily.db`,
+        or replace it, unless the text is the bug. Never attach `worklog.db`,
         and never paste FirstMate's token or `runtime.json`.
 
         If this is a security problem, do not file it here. See
-        [SECURITY.md](https://github.com/luanAfons0/daily/blob/main/SECURITY.md).
+        [SECURITY.md](https://github.com/luanAfons0/worklog/blob/main/SECURITY.md).
 
   - type: textarea
     id: what-happened
     attributes:
       label: What happened
       description: >
-        What Daily did, and what you expected instead. Name the Entry's Status
+        What Worklog did, and what you expected instead. Name the Entry's Status
         before and after, and which Cycle it was in.
     validations:
       required: true
@@ -28,7 +28,7 @@ body:
       label: How to make it happen again
       description: >
         The steps on the Plugin Page, or the tool calls and their answers, from
-        a Daily that starts empty. `start_cycle`, `create_entry` and
+        a Worklog that starts empty. `start_cycle`, `create_entry` and
         `update_entry` with their arguments are usually the answer.
     validations:
       required: true
@@ -39,7 +39,7 @@ body:
       label: What the journal says
       description: >
         The lines from `journalctl --user -u firstmate` that start with
-        `daily:`, around the time it went wrong.
+        `worklog:`, around the time it went wrong.
       render: shell
     validations:
       required: false

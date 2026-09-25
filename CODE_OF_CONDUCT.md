@@ -62,8 +62,8 @@ representative at an online or offline event.
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the maintainers of this project privately, through GitHub's
 private reporting on the
-[Security tab](https://github.com/luanAfons0/daily/security/advisories) of
-`luanAfons0/daily`. It is the one private channel this project has, and only
+[Security tab](https://github.com/luanAfons0/worklog/security/advisories) of
+`luanAfons0/worklog`. It is the one private channel this project has, and only
 the maintainers can read what is sent there. All complaints will be reviewed
 and investigated promptly and fairly.
 

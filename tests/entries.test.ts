@@ -102,7 +102,7 @@ test('a body that is not text is refused in one sentence', async (t) => {
   assert.match(answer.error?.message ?? '', /body/);
 });
 
-test('the Entries survive a restart, in daily.db in the Plugin directory', async (t) => {
+test('the Entries survive a restart, in worklog.db in the Plugin directory', async (t) => {
   const first = await startedAndShaken(t);
   const entry = structureOf<Entry>(
     await first.call('create_entry', { title: 'Remember me', status: 'Todo' }),
@@ -110,15 +110,16 @@ test('the Entries survive a restart, in daily.db in the Plugin directory', async
   first.stop();
   await first.ended();
 
-  await access(join(first.directory, 'daily.db'));
+  await access(join(first.directory, 'worklog.db'));
   const second = await startedAndShaken(t, { directory: first.directory });
   const view = structureOf<CycleView>(await second.call('get_cycle'));
 
   assert.deepEqual(view.entries, [entry]);
 });
 
-test('git ignores daily.db, so nobody commits their Entries', async () => {
+test('git ignores worklog.db and the old daily.db, so nobody commits their Entries', async () => {
   const ignored = (await readFile(join(REPOSITORY, '.gitignore'), 'utf8')).split('\n');
 
+  assert.ok(ignored.includes('worklog.db'), '.gitignore does not name worklog.db');
   assert.ok(ignored.includes('daily.db'), '.gitignore does not name daily.db');
 });

@@ -13,10 +13,10 @@ import { makeDirectory, startPluginServer } from './helpers/plugin.ts';
 /** The PATH a systemd user service gets: no nvm, no login shell. */
 const SERVICE_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
 
-test('the wrapper runs the Node that DAILY_NODE names when PATH has none new enough', async (t) => {
+test('the wrapper runs the Node that WORKLOG_NODE names when PATH has none new enough', async (t) => {
   const home = await makeDirectory(t);
   const plugin = await startPluginServer(t, {
-    env: { PATH: SERVICE_PATH, HOME: home, DAILY_NODE: process.execPath },
+    env: { PATH: SERVICE_PATH, HOME: home, WORKLOG_NODE: process.execPath },
   });
 
   const answer = await plugin.handshake();
@@ -24,17 +24,18 @@ test('the wrapper runs the Node that DAILY_NODE names when PATH has none new eno
   assert.equal(answer.error, undefined, plugin.output());
 });
 
-test('with no Node 24 anywhere, the wrapper says so in one sentence that names DAILY_NODE', async (t) => {
+test('with no Node 24 anywhere, the wrapper says so in one sentence that names WORKLOG_NODE', async (t) => {
   const home = await makeDirectory(t);
   const plugin = await startPluginServer(t, {
-    env: { PATH: SERVICE_PATH, HOME: home, DAILY_NODE: '' },
+    env: { PATH: SERVICE_PATH, HOME: home, WORKLOG_NODE: '' },
   });
 
   const ending = await plugin.ended();
 
   assert.notEqual(ending.code, 0);
   const said = plugin.output().trim();
-  assert.ok(said.includes('DAILY_NODE'), `stderr said: ${said}`);
+  assert.ok(said.includes('WORKLOG_NODE'), `stderr said: ${said}`);
+  assert.ok(said.startsWith('worklog: '), `stderr said: ${said}`);
   assert.equal(said.split('\n').length, 1, `stderr said more than one line: ${said}`);
   assert.equal(plugin.lines().length, 0, 'something reached stdout');
 });

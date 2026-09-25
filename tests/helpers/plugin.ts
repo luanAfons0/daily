@@ -10,7 +10,7 @@
  *
  * The Host starts a Plugin Server in the Plugin's own directory, so a test
  * gives it a temporary one. The code still comes from this repository; only
- * the directory the Plugin keeps `daily.db` in is temporary.
+ * the directory the Plugin keeps `worklog.db` in is temporary.
  */
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -74,7 +74,7 @@ export type Started = {
 
 /** A temporary Plugin directory for one test, removed when the test ends. */
 export async function makeDirectory(t: TestContext): Promise<string> {
-  const directory = await mkdtemp(join(tmpdir(), 'daily-test-'));
+  const directory = await mkdtemp(join(tmpdir(), 'worklog-test-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   return directory;
 }
