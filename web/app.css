@@ -530,6 +530,27 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
 
 .entry-title { margin: 0; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
 
+/* The title row: the title at the left, the Link's mark in the corner. */
+.entry-head { display: flex; align-items: flex-start; gap: 8px; }
+
+.entry-head .entry-title { flex: 1; min-width: 0; }
+
+/* The Link is quiet until it is pointed at, like the controls of a card. */
+.entry-link {
+  display: inline-flex;
+  flex: none;
+  margin: 1px -4px 0 0;
+  padding: 2px;
+  border-radius: 4px;
+  color: var(--faint);
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.entry-link:hover,
+.entry-link:focus-visible { color: var(--ink); background: var(--sunken); }
+
+.entry-link svg { display: block; }
+
 .entry-body { margin-top: 4px; color: var(--muted); font-size: 14px; }
 
 .entry-foot {
@@ -908,23 +929,11 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
   overflow-wrap: anywhere;
 }
 
-/* Masonry: app.js deals the Notes into columns, each to the shortest one. */
-.notes {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
+/* Masonry: app.js puts each Note where masonry.js says, and sets the list's
+   height, so the cards are placed by hand inside a positioned box. */
+.notes { position: relative; }
 
-.notes-col {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  /* One track no wider than the column. An automatic track grows to the
-     longest thing that cannot wrap, a link chip, and the card spills out. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  transition: flex-grow 160ms ease;
-}
+.notes > .note { position: absolute; margin: 0; }
 
 .note { padding: 12px 14px 8px; }
 
@@ -1339,6 +1348,13 @@ body.popup { background: var(--surface); overflow-x: hidden; }
 
 .sheet-form [hidden] { display: none; }
 
+/* The Link of an Entry: one quiet line under the text, named on its left. */
+.sheet-link { display: flex; align-items: center; gap: 10px; }
+
+.sheet-link-name { color: var(--muted); font-size: 13px; }
+
+.sheet-link .input { flex: 1; padding: 6px 10px; font-size: 14px; }
+
 .sheet-foot {
   display: flex;
   align-items: center;
@@ -1402,23 +1418,11 @@ body.popup { background: var(--surface); overflow-x: hidden; }
   overflow-wrap: anywhere;
 }
 
-/* Masonry: app.js deals the Notes into columns, each to the shortest one. */
-.notes {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
+/* Masonry: app.js puts each Note where masonry.js says, and sets the list's
+   height, so the cards are placed by hand inside a positioned box. */
+.notes { position: relative; }
 
-.notes-col {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  /* One track no wider than the column. An automatic track grows to the
-     longest thing that cannot wrap, a link chip, and the card spills out. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  transition: flex-grow 160ms ease;
-}
+.notes > .note { position: absolute; margin: 0; }
 
 .note { padding: 12px 14px 8px; }
 
@@ -1506,6 +1510,26 @@ body.popup { background: var(--surface); overflow-x: hidden; }
 .md input[type='checkbox'] { accent-color: var(--done); }
 
 .md hr { border: none; border-top: 1px solid var(--line); }
+
+/* A table scrolls inside its wrapper, so a wide one never widens its card. */
+.md .table { margin: 0 0 0.5em; overflow-x: auto; }
+
+.md table { border-collapse: collapse; font-size: 0.95em; }
+
+.md th, .md td {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: normal;
+  min-width: 4em;
+}
+
+.md th { background: var(--sunken); font-weight: 600; }
+
+.md th.center, .md td.center { text-align: center; }
+
+.md th.right, .md td.right { text-align: right; }
 
 @media (max-width: 1100px) {
   .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1633,7 +1657,24 @@ body.popup { background: var(--surface); }
 }
 
 .quick-title::placeholder,
-.quick-body::placeholder { color: var(--faint); }
+.quick-body::placeholder,
+.quick-link::placeholder { color: var(--faint); }
+
+/* The Link: a quiet line under the text, set apart by a hairline. */
+.quick-link {
+  width: 100%;
+  padding: 6px 0 0;
+  border: none;
+  border-top: 1px solid var(--line-soft);
+  background: transparent;
+  outline: none;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.quick-link:focus { color: var(--ink); }
+
+.quick-link[hidden] { display: none; }
 
 /* The Status of an Entry, drawn as Linear-like rings: empty for Todo, half
    for In Progress, full with a tick for Done. */

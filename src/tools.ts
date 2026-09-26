@@ -17,6 +17,7 @@ import {
 import {
   checkBody,
   checkId,
+  checkLink,
   checkStatus,
   checkTitle,
   createEntry,
@@ -42,6 +43,11 @@ import { within, type Store } from './store.ts';
 
 const TITLE = { type: 'string', description: 'One line that says what the Entry is.' };
 const BODY = { type: 'string', description: 'Details, as Markdown. Optional.' };
+const LINK = {
+  type: 'string',
+  description:
+    'The http or https address of the issue or pull request the Entry is about. Optional.',
+};
 const ID = { type: 'integer', description: 'The id of the Entry, from get_cycle.' };
 const NOTE_TITLE = {
   type: 'string',
@@ -112,7 +118,7 @@ export function toolsFor(store: Store): readonly Tool[] {
       description: 'Add one Entry to the current Cycle, with the Status given.',
       inputSchema: {
         type: 'object',
-        properties: { title: TITLE, body: BODY, status: STATUS },
+        properties: { title: TITLE, body: BODY, status: STATUS, link: LINK },
         required: ['title', 'status'],
       },
       call: (given) => {
@@ -120,6 +126,7 @@ export function toolsFor(store: Store): readonly Tool[] {
           title: checkTitle('create_entry', given['title']),
           body: checkBody('create_entry', given['body']),
           status: checkStatus('create_entry', given['status']),
+          link: checkLink('create_entry', given['link']),
         };
         return told(within(store, () => createEntry(store, currentCycle(store).id, fields)));
       },
@@ -128,11 +135,11 @@ export function toolsFor(store: Store): readonly Tool[] {
     {
       name: 'update_entry',
       description:
-        'Change the title, the body or the Status of one Entry. Any Status may go to any ' +
-        'other. A body of null or "" takes the body away.',
+        'Change the title, the body, the Status or the Link of one Entry. Any Status may go ' +
+        'to any other. A body or a link of null or "" takes it away.',
       inputSchema: {
         type: 'object',
-        properties: { id: ID, title: TITLE, body: BODY, status: STATUS },
+        properties: { id: ID, title: TITLE, body: BODY, status: STATUS, link: LINK },
         required: ['id'],
       },
       call: (given) => {
@@ -140,7 +147,7 @@ export function toolsFor(store: Store): readonly Tool[] {
         const change = changeOf(given);
         if (Object.keys(change).length === 0) {
           throw badInput(
-            'update_entry needs at least one of "title", "body" or "status" to change.',
+            'update_entry needs at least one of "title", "body", "status" or "link" to change.',
           );
         }
         return told(
@@ -271,6 +278,7 @@ function changeOf(given: Readonly<Record<string, unknown>>): EntryChange {
     ...(given['title'] === undefined ? {} : { title: checkTitle(tool, given['title']) }),
     ...(given['body'] === undefined ? {} : { body: checkBody(tool, given['body']) }),
     ...(given['status'] === undefined ? {} : { status: checkStatus(tool, given['status']) }),
+    ...(given['link'] === undefined ? {} : { link: checkLink(tool, given['link']) }),
   };
 }
 

@@ -100,3 +100,42 @@ test('a bare address reads short, and still goes to the whole address', async ()
   assert.match(html, /<a href="https:\/\/www\.cult-ui\.com\/"[^>]*>cult-ui\.com<\/a>/);
   assert.match(html, /<a href="https:\/\/github\.com\/a\/b\/pull\/1"[^>]*>github\.com\/a\/b\/pull\/1<\/a>/);
 });
+
+test('a table reads as a table, with its alignment and its checkboxes', async () => {
+  const render = await renderer();
+
+  const html = render(
+    'Before.\n| Name | Done | Size |\n| --- | :---: | ---: |\n| **one** | [ ] | 1 |\n| `a|b` | [x] | 22 |',
+  );
+
+  assert.match(html, /<p>Before\.<\/p><div class="table"><table>/);
+  assert.match(html, /<thead><tr><th>Name<\/th><th class="center">Done<\/th><th class="right">Size<\/th><\/tr><\/thead>/);
+  assert.match(html, /<td><strong>one<\/strong><\/td><td class="center"><input type="checkbox" disabled><\/td>/);
+  assert.match(html, /<td><code>a\|b<\/code><\/td><td class="center"><input type="checkbox" disabled checked><\/td><td class="right">22<\/td>/);
+});
+
+test('a row with too few cells is filled, and an escaped pipe is text', async () => {
+  const render = await renderer();
+
+  const html = render('a | b\n--- | ---\nx \\| y\n');
+
+  assert.match(html, /<tr><td>x \| y<\/td><td><\/td><\/tr>/);
+});
+
+test('a line with a pipe is no table without a delimiter row under it', async () => {
+  const render = await renderer();
+
+  const html = render('this | that\nand more');
+
+  assert.doesNotMatch(html, /<table>/);
+  assert.match(html, /<p>this \| that<br>and more<\/p>/);
+});
+
+test('HTML in a table cell shows as text and never becomes markup', async () => {
+  const render = await renderer();
+
+  const html = render('| a |\n| - |\n| <img src=x onerror=alert(1)> |');
+
+  assert.doesNotMatch(html, /<img/);
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+});

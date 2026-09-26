@@ -211,6 +211,7 @@ function pick() {
   const item = picked();
   byId('q-title').value = item ? item.title : '';
   byId('q-body').value = item ? item.body || '' : '';
+  byId('q-link').value = item && kind() === 'entry' ? item.link || '' : '';
   if (kind() === 'entry') {
     const wanted = item ? item.status : 'Todo';
     for (const choice of document.querySelectorAll('input[name="status"]')) {
@@ -230,6 +231,8 @@ function shape() {
   const body = byId('q-body');
   byId('q-ring').hidden = note;
   byId('q-statuses').hidden = note;
+  byId('q-link').hidden = note;
+  byId('q-link').value = '';
   title.placeholder = note ? 'Title' : 'What are you working on?';
   body.placeholder = note ? 'The Note, in Markdown…' : 'Add details, in Markdown…';
   // A new kind starts new: what was being edited belongs to the other kind.
@@ -265,6 +268,7 @@ async function save(event) {
         title: byId('q-title').value,
         body: byId('q-body').value,
         status: status(),
+        link: byId('q-link').value,
       });
     } else if (kind() === 'note') {
       await call('create_note', { title: byId('q-title').value, body: byId('q-body').value });
@@ -273,6 +277,7 @@ async function save(event) {
         title: byId('q-title').value,
         body: byId('q-body').value,
         status: status(),
+        link: byId('q-link').value,
       });
     }
     // Tell the main Plugin Page, which may be open under this Popup, to draw
@@ -339,7 +344,7 @@ document.addEventListener('keydown', (event) => {
 
 // The same keys as the Plugin Page: Shift+Enter saves from any field, and
 // Enter alone is a new line in the text, which is Markdown and has many.
-for (const field of [byId('q-title'), byId('q-body')]) {
+for (const field of [byId('q-title'), byId('q-body'), byId('q-link')]) {
   field.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && event.shiftKey && !event.isComposing) void save(event);
   });

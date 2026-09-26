@@ -133,6 +133,13 @@
     </div>
     <input class="sheet-title" id="ed-title" type="text" placeholder="Title" aria-label="Title">
     <textarea class="sheet-body" id="ed-body" rows="10" placeholder="Details, in Markdown." aria-label="Text"></textarea>
+    <!-- The Link: the issue or pull request the Entry is about. Empty takes
+         it away. An Entry's only; app.js hides it for a Note. -->
+    <label class="sheet-link" id="ed-link-line">
+      <span class="sheet-link-name">Link</span>
+      <input class="input" id="ed-link" type="url" inputmode="url" spellcheck="false"
+             placeholder="Paste a Linear or GitHub address" aria-label="Link">
+    </label>
     <div class="chips sheet-statuses" id="ed-statuses" role="radiogroup" aria-label="Status">
       <label class="chip"><input type="radio" name="edit-status" value="Todo"><span><i class="ring todo"></i>Todo</span></label>
       <label class="chip"><input type="radio" name="edit-status" value="In Progress"><span><i class="ring doing"></i>In Progress</span></label>
@@ -149,6 +156,7 @@
 </dialog>
 <script src="rpc.js"></script>
 <script src="markdown.js"></script>
+<script src="masonry.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
