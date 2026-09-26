@@ -65,9 +65,11 @@ web/           the Plugin Page and the Popup form, as the Host serves them.
   new.html     the Popup form a FirstMate Shortcut opens, driven by new.js.
   rpc.js       call(): one tool call over POST rpc, for both pages.
   markdown.js  the small Markdown renderer this Plugin owns instead of a CDN.
+  masonry.js   where each Note goes in the Notes tab: decided, not drawn.
   app.css      one stylesheet for both pages.
 tests/         one file per behaviour, plus helpers/plugin.ts.
-               page.test.ts and markdown.test.ts read web/ off disk.
+               page.test.ts, markdown.test.ts and masonry.test.ts read
+               web/ off disk.
 docs/adr/      the decisions that are expensive to reverse.
 docs/agents/   how an agent works in this repo. See "Agent skills" below.
 ```

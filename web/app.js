@@ -638,14 +638,14 @@ sendOnShiftEnter(byId('ed-body'));
 const NOTE_WIDTH = 280;
 const NOTE_GAP = 12;
 
-/** The Note cards last drawn, newest first, and how many columns hold them. */
+/** The Note cards last drawn, newest first, and the width they were laid in. */
 let noteCards = [];
-let noteColumns = 0;
+let laidWidth = 0;
 
 /**
- * Put each Note, newest first, into the shortest column so far. A long Note
- * then pushes down only its own column, and the small Notes after it stay in
- * view instead of waiting under the tallest card of a row.
+ * Lay the Note cards out as masonry: measure each at the width of one column,
+ * ask placeNotes (masonry.js) where each goes, and put it there. The list is
+ * a positioned box as tall as its tallest column.
  */
 function layNotes() {
   const list = byId('notes');
@@ -653,31 +653,40 @@ function layNotes() {
   // A hidden tab has no width to measure; the observer below calls again
   // when the tab is shown.
   if (width === 0 || noteCards.length === 0) return;
-  noteColumns = Math.max(1, Math.floor((width + NOTE_GAP) / (NOTE_WIDTH + NOTE_GAP)));
-  const columns = Array.from({ length: noteColumns }, () => el('div', { class: 'notes-col' }));
-  list.replaceChildren(...columns);
-  for (const card of noteCards) {
-    let shortest = columns[0];
-    for (const column of columns) {
-      if (column.offsetHeight < shortest.offsetHeight) shortest = column;
-    }
-    shortest.append(card);
-  }
+  laidWidth = width;
+  const columns = Math.max(1, Math.floor((width + NOTE_GAP) / (NOTE_WIDTH + NOTE_GAP)));
+  const column = (width - NOTE_GAP * (columns - 1)) / columns;
+  for (const card of noteCards) card.style.width = `${column}px`;
+  list.replaceChildren(...noteCards);
+  // Every width is set before any height is read, so the page is laid out
+  // once for all the cards, not once for each.
+  const notes = noteCards.map((card) => ({
+    single: card.offsetHeight,
+    double: card.offsetHeight,
+    table: false,
+  }));
+  const placed = placeNotes(notes, columns, innerHeight, NOTE_GAP);
+  placed.places.forEach((place, at) => {
+    const card = noteCards[at];
+    card.style.left = `${place.column * (column + NOTE_GAP)}px`;
+    card.style.top = `${place.top}px`;
+  });
+  list.style.height = `${placed.height}px`;
 }
 
-// Lay the Notes out again when the number of columns that fit changes, and
-// when the Notes tab is first shown, since a hidden list measured nothing.
+// A card's height follows its width, so the Notes are laid out again when
+// the list is wider or narrower, and when the Notes tab is first shown,
+// since a hidden list measured nothing.
 new ResizeObserver(() => {
   const width = byId('notes').clientWidth;
-  const fits = Math.max(1, Math.floor((width + NOTE_GAP) / (NOTE_WIDTH + NOTE_GAP)));
-  if (width > 0 && (fits !== noteColumns || !byId('notes').querySelector('.notes-col'))) {
-    layNotes();
-  }
+  if (width > 0 && width !== laidWidth) layNotes();
 }).observe(byId('notes'));
 
 function drawNotes(notes) {
   byId('notes-count').textContent = notes.length > 0 ? String(notes.length) : '';
   noteCards = notes.map(noteCard);
+  byId('notes').style.height = '';
+  laidWidth = 0;
   if (notes.length === 0) {
     byId('notes').replaceChildren(el('p', { class: 'notes-empty', text: 'No Notes yet.' }));
     return;

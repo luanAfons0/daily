@@ -929,23 +929,11 @@ textarea.input { resize: vertical; min-height: 64px; field-sizing: content; max-
   overflow-wrap: anywhere;
 }
 
-/* Masonry: app.js deals the Notes into columns, each to the shortest one. */
-.notes {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
+/* Masonry: app.js puts each Note where masonry.js says, and sets the list's
+   height, so the cards are placed by hand inside a positioned box. */
+.notes { position: relative; }
 
-.notes-col {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  /* One track no wider than the column. An automatic track grows to the
-     longest thing that cannot wrap, a link chip, and the card spills out. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  transition: flex-grow 160ms ease;
-}
+.notes > .note { position: absolute; margin: 0; }
 
 .note { padding: 12px 14px 8px; }
 
@@ -1430,23 +1418,11 @@ body.popup { background: var(--surface); overflow-x: hidden; }
   overflow-wrap: anywhere;
 }
 
-/* Masonry: app.js deals the Notes into columns, each to the shortest one. */
-.notes {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
+/* Masonry: app.js puts each Note where masonry.js says, and sets the list's
+   height, so the cards are placed by hand inside a positioned box. */
+.notes { position: relative; }
 
-.notes-col {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  /* One track no wider than the column. An automatic track grows to the
-     longest thing that cannot wrap, a link chip, and the card spills out. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  transition: flex-grow 160ms ease;
-}
+.notes > .note { position: absolute; margin: 0; }
 
 .note { padding: 12px 14px 8px; }
 

@@ -115,6 +115,15 @@ test('the Markdown renderer is a local file the Page loads before its script', a
   await stat(join(WEB, 'markdown.js'));
 });
 
+test('the Notes placement is a local file the Page loads before its script', async () => {
+  const html = await readFile(join(WEB, 'index.html'), 'utf8');
+  const paths = pathsIn(html);
+
+  assert.ok(paths.includes('masonry.js'), 'index.html does not load masonry.js');
+  assert.ok(paths.indexOf('masonry.js') < paths.indexOf('app.js'), 'masonry.js loads too late');
+  await stat(join(WEB, 'masonry.js'));
+});
+
 test('the presentation shows what the Meeting reports, as meeting_markdown decides it', async () => {
   const html = await readFile(join(WEB, 'index.html'), 'utf8');
   const code = await readFile(join(WEB, 'app.js'), 'utf8');
