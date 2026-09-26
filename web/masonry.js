@@ -9,7 +9,12 @@
    It defines one global: placeNotes(notes, columns, screen, gap) →
    { places: [{ column, span, top }], height }, with one place per Note, in
    the order given. Each Note is { single, double, table }: its height at one
-   column, its height at two, and whether it holds a table. */
+   column, its height at two, and whether it holds a table.
+
+   A Note is one column wide or two, never another width, so the page keeps
+   straight columns. A Note with a table is two wide, so the table shows in
+   full; but only when three or more columns fit, or it would take the whole
+   list. */
 'use strict';
 
 (function () {
@@ -22,15 +27,42 @@
     return column;
   }
 
+  /** Whether a Note is two columns wide rather than one. */
+  function wide(note, columns) {
+    return columns >= 3 && note.table;
+  }
+
+  /**
+   * The pair of side-by-side columns whose taller one ends highest, the
+   * leftmost pair on a tie, given by its left column.
+   */
+  function lowestPair(next) {
+    let column = 0;
+    for (let at = 1; at < next.length - 1; at += 1) {
+      if (Math.max(next[at], next[at + 1]) < Math.max(next[column], next[column + 1])) {
+        column = at;
+      }
+    }
+    return column;
+  }
+
   /**
    * Put each Note, newest first, under the shortest column so far. A long
    * Note then pushes down only its own column, and the small Notes after it
-   * stay in view instead of waiting under the tallest card of a row.
+   * stay in view instead of waiting under the tallest card of a row. A wide
+   * Note goes on the lowest pair, under the taller of its two columns; the
+   * space under the shorter one stays empty.
    */
   function placeNotes(notes, columns, screen, gap) {
     // Where the next Note in each column would start.
     const next = Array.from({ length: columns }, () => 0);
     const places = notes.map((note) => {
+      if (wide(note, columns)) {
+        const column = lowestPair(next);
+        const top = Math.max(next[column], next[column + 1]);
+        next[column] = next[column + 1] = top + note.double + gap;
+        return { column, span: 2, top };
+      }
       const column = shortest(next);
       const top = next[column];
       next[column] = top + note.single + gap;

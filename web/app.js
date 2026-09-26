@@ -644,8 +644,9 @@ let laidWidth = 0;
 
 /**
  * Lay the Note cards out as masonry: measure each at the width of one column,
- * ask placeNotes (masonry.js) where each goes, and put it there. The list is
- * a positioned box as tall as its tallest column.
+ * and a card that can be two columns wide at that width too, ask placeNotes
+ * (masonry.js) where each goes, and put it there. The list is a positioned
+ * box as tall as its tallest column.
  */
 function layNotes() {
   const list = byId('notes');
@@ -655,20 +656,27 @@ function layNotes() {
   if (width === 0 || noteCards.length === 0) return;
   laidWidth = width;
   const columns = Math.max(1, Math.floor((width + NOTE_GAP) / (NOTE_WIDTH + NOTE_GAP)));
-  const column = (width - NOTE_GAP * (columns - 1)) / columns;
-  for (const card of noteCards) card.style.width = `${column}px`;
-  list.replaceChildren(...noteCards);
+  const single = (width - NOTE_GAP * (columns - 1)) / columns;
+  const double = 2 * single + NOTE_GAP;
   // Every width is set before any height is read, so the page is laid out
-  // once for all the cards, not once for each.
+  // once for each width, not once for each card.
+  for (const card of noteCards) card.style.width = `${single}px`;
+  list.replaceChildren(...noteCards);
   const notes = noteCards.map((card) => ({
     single: card.offsetHeight,
     double: card.offsetHeight,
-    table: false,
+    // The Markdown renderer wraps every table in this (markdown.js).
+    table: card.querySelector('.note-body .table') !== null,
   }));
+  // Only three columns or more give a Note two (masonry.js).
+  const wideable = columns >= 3 ? notes.flatMap((note, at) => (note.table ? [at] : [])) : [];
+  for (const at of wideable) noteCards[at].style.width = `${double}px`;
+  for (const at of wideable) notes[at].double = noteCards[at].offsetHeight;
   const placed = placeNotes(notes, columns, innerHeight, NOTE_GAP);
   placed.places.forEach((place, at) => {
     const card = noteCards[at];
-    card.style.left = `${place.column * (column + NOTE_GAP)}px`;
+    card.style.width = `${place.span === 2 ? double : single}px`;
+    card.style.left = `${place.column * (single + NOTE_GAP)}px`;
     card.style.top = `${place.top}px`;
   });
   list.style.height = `${placed.height}px`;
