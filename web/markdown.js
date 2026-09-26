@@ -4,11 +4,12 @@
    the internet stops working the day the internet is not there.
 
    It covers what a person types in a quick note — paragraphs, headings, lists
-   nested by indent, quotes, code, emphasis and links — and nothing more. A
-   bare address shows short, as spell.sh, and still goes to the whole address. Every character of the
-   source is escaped before any Markdown is read, so text can never become
-   markup; a link keeps only an http, https or mailto address, or a relative
-   one. It defines one global: renderMarkdown(text) → an HTML string. */
+   nested by indent, quotes, code, tables, emphasis and links — and nothing
+   more. A bare address shows short, as spell.sh, and still goes to the whole
+   address. Every character of the source is escaped before any Markdown is
+   read, so text can never become markup; a link keeps only an http, https or
+   mailto address, or a relative one. It defines one global:
+   renderMarkdown(text) → an HTML string. */
 'use strict';
 
 (function () {
@@ -81,6 +82,8 @@
   const QUOTE = /^\s*&gt;\s?(.*)$/;
   const RULE = /^\s*([-*_])(\s*\1){2,}\s*$/;
   const ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+  const ROW = /\|/;
+  const DELIMITER = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 
   /** How far a line is indented, a tab counting as four spaces. */
   function indentOf(line) {
@@ -93,6 +96,88 @@
       ? '<input type="checkbox" disabled' + (task[1] === ' ' ? '' : ' checked') + '> ' +
           inline(task[2])
       : inline(text);
+  }
+
+  /**
+   * The cells of one table row. A pipe inside a code span, or written as \\|,
+   * is text and not a border. The pipes at either end are optional.
+   */
+  function cells(line) {
+    const found = [];
+    let cell = '';
+    let code = false;
+    for (let at = 0; at < line.length; at += 1) {
+      const char = line[at];
+      if (char === '\\' && line[at + 1] === '|') {
+        cell += '|';
+        at += 1;
+      } else if (char === '`') {
+        code = !code;
+        cell += char;
+      } else if (char === '|' && !code) {
+        found.push(cell);
+        cell = '';
+      } else {
+        cell += char;
+      }
+    }
+    found.push(cell);
+    if (/^\s*\|/.test(line)) found.shift();
+    if (/\|\s*$/.test(line) && !/\\\|\s*$/.test(line)) found.pop();
+    return found.map((text) => text.trim());
+  }
+
+  /** Whether line i starts a table: a row, then a delimiter row as wide. */
+  function startsTable(lines, i) {
+    return (
+      i + 1 < lines.length &&
+      ROW.test(lines[i]) &&
+      DELIMITER.test(lines[i + 1]) &&
+      cells(lines[i]).length === cells(lines[i + 1]).length
+    );
+  }
+
+  /** One cell's text: a lone [ ] or [x] is a checkbox, as in a list. */
+  function cell(text) {
+    const task = /^\[([ xX])\]$/.exec(text);
+    if (task) return '<input type="checkbox" disabled' + (task[1] === ' ' ? '' : ' checked') + '>';
+    return inline(text);
+  }
+
+  /**
+   * One table, starting at line i. The delimiter row sets each column's
+   * alignment; a row with too few cells is filled, one with too many is cut.
+   * Answers the HTML and the first line it did not read.
+   */
+  function table(lines, i) {
+    const aligns = cells(lines[i + 1]).map((rule) => {
+      const left = rule.startsWith(':');
+      const right = rule.endsWith(':');
+      if (left && right) return ' class="center"';
+      if (right) return ' class="right"';
+      return '';
+    });
+    const row = (line, tag) =>
+      '<tr>' +
+      aligns
+        .map((align, n) => '<' + tag + align + '>' + cell(cells(line)[n] || '') + '</' + tag + '>')
+        .join('') +
+      '</tr>';
+    const head = row(lines[i], 'th');
+    const body = [];
+    i += 2;
+    while (i < lines.length && lines[i].trim() !== '' && lines[i].includes('|')) {
+      body.push(row(lines[i], 'td'));
+      i += 1;
+    }
+    return {
+      // The wrapper scrolls, so a wide table never widens the card it is in.
+      html:
+        '<div class="table"><table><thead>' + head + '</thead>' +
+        (body.length > 0 ? '<tbody>' + body.join('') + '</tbody>' : '') +
+        '</table></div>',
+      next: i,
+    };
   }
 
   /**
@@ -177,6 +262,13 @@
         continue;
       }
 
+      if (startsTable(lines, i)) {
+        const read = table(lines, i);
+        out.push(read.html);
+        i = read.next;
+        continue;
+      }
+
       if (ITEM.test(line)) {
         const read = list(lines, i, indentOf(line));
         out.push(read.html);
@@ -191,7 +283,8 @@
         !FENCE.test(lines[i]) &&
         !HEADING.test(lines[i]) &&
         !QUOTE.test(lines[i]) &&
-        !ITEM.test(lines[i])
+        !ITEM.test(lines[i]) &&
+        !startsTable(lines, i)
       ) {
         paragraph.push(inline(lines[i]));
         i += 1;

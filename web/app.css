@@ -1535,6 +1535,26 @@ body.popup { background: var(--surface); overflow-x: hidden; }
 
 .md hr { border: none; border-top: 1px solid var(--line); }
 
+/* A table scrolls inside its wrapper, so a wide one never widens its card. */
+.md .table { margin: 0 0 0.5em; overflow-x: auto; }
+
+.md table { border-collapse: collapse; font-size: 0.95em; }
+
+.md th, .md td {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: normal;
+  min-width: 4em;
+}
+
+.md th { background: var(--sunken); font-weight: 600; }
+
+.md th.center, .md td.center { text-align: center; }
+
+.md th.right, .md td.right { text-align: right; }
+
 @media (max-width: 1100px) {
   .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
