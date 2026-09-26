@@ -1365,6 +1365,49 @@ body.popup { background: var(--surface); overflow-x: hidden; }
 
 .sheet-foot .hint { margin-right: auto; }
 
+/* The text of the edit dialog, as in Notion: every block formatted, and the
+   one being typed in as its Markdown, in the same place and the same size. */
+/* The editor reaches 6px past the text on each side, so a block's padding
+   lines its text up with the title and nothing sticks out to scroll to. */
+.sheet-body.live {
+  width: calc(100% + 12px);
+  margin: 0 -6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  cursor: text;
+  outline: none;
+}
+
+.live-block,
+.live-area {
+  display: block;
+  width: 100%;
+  margin: 0 0 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.live-block:hover { background: color-mix(in srgb, var(--sunken) 60%, transparent); }
+
+.live-block > :last-child { margin-bottom: 0; }
+
+.live-block input[type='checkbox'] { cursor: pointer; }
+
+.live-area {
+  border: none;
+  outline: none;
+  resize: none;
+  field-sizing: content;
+  min-height: 1.6em;
+  background: var(--sunken);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.6;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.live-empty { margin: 0; color: var(--faint); }
+
 /* --- asking before a delete ------------------------------------------- */
 
 .ask {

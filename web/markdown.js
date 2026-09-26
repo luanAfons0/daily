@@ -8,8 +8,10 @@
    more. A bare address shows short, as spell.sh, and still goes to the whole
    address. Every character of the source is escaped before any Markdown is
    read, so text can never become markup; a link keeps only an http, https or
-   mailto address, or a relative one. It defines one global:
-   renderMarkdown(text) → an HTML string. */
+   mailto address, or a relative one. It defines two globals:
+   renderMarkdown(text) → an HTML string, and markdownBlocks(text) → the same
+   text cut into its blocks, each with its own source and HTML, for the editor
+   that shows every block formatted but the one being typed in. */
 'use strict';
 
 (function () {
@@ -210,13 +212,36 @@
     };
   }
 
-  function renderMarkdown(source) {
-    const lines = escape(String(source || '')).replace(/\r\n?/g, '\n').split('\n');
-    const out = [];
+  /** The source with every line end made one \n, as both globals read it. */
+  function normal(source) {
+    return String(source || '').replace(/\r\n?/g, '\n');
+  }
+
+  /**
+   * Every block of the source, in order: its HTML, and the lines it came from
+   * as [start, end). A block never starts or ends on a blank line.
+   */
+  function read(source) {
+    const lines = escape(normal(source)).split('\n');
+    const blocks = [];
     let i = 0;
+    let start = 0;
+    // A branch pushes before it moves i past its lines, so a block's end is
+    // set when the loop comes round again, or when it stops.
+    const close = () => {
+      const last = blocks[blocks.length - 1];
+      if (last && last.end === undefined) last.end = Math.min(i, lines.length);
+    };
+    const out = {
+      push(html) {
+        blocks.push({ html, start, end: undefined });
+      },
+    };
 
     while (i < lines.length) {
+      close();
       const line = lines[i];
+      start = i;
 
       if (line.trim() === '') {
         i += 1;
@@ -292,9 +317,38 @@
       // A single newline is kept as a line break: a note is typed, not typeset.
       out.push('<p>' + paragraph.join('<br>') + '</p>');
     }
+    close();
 
-    return out.join('');
+    return blocks;
+  }
+
+  function renderMarkdown(source) {
+    return read(source)
+      .map((block) => block.html)
+      .join('');
+  }
+
+  /**
+   * The source cut into its blocks. Each block is { source, html, after }:
+   * after is the exact text up to the next block, so joining every source and
+   * after gives back the source, less any blank lines before the first block.
+   */
+  function markdownBlocks(source) {
+    const lines = normal(source).split('\n');
+    const found = read(source);
+    return found.map((block, n) => {
+      const next = found[n + 1];
+      const gap = next
+        ? lines.slice(block.end, next.start).map((line) => line + '\n').join('')
+        : lines.slice(block.end).join('\n');
+      return {
+        source: lines.slice(block.start, block.end).join('\n'),
+        html: block.html,
+        after: next || block.end < lines.length ? '\n' + gap : '',
+      };
+    });
   }
 
   globalThis.renderMarkdown = renderMarkdown;
+  globalThis.markdownBlocks = markdownBlocks;
 })();

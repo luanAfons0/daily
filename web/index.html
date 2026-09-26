@@ -132,7 +132,9 @@
       <button class="quick-close" id="ed-close" type="button" aria-label="Close" title="Close (Esc)"></button>
     </div>
     <input class="sheet-title" id="ed-title" type="text" placeholder="Title" aria-label="Title">
-    <textarea class="sheet-body" id="ed-body" rows="10" placeholder="Details, in Markdown." aria-label="Text"></textarea>
+    <!-- The text, as in Notion: every block formatted but the one being
+         typed in, drawn by live-editor.js. -->
+    <div class="sheet-body md live" id="ed-body" role="group" aria-label="Text"></div>
     <!-- The Link: the issue or pull request the Entry is about. Empty takes
          it away. An Entry's only; app.js hides it for a Note. -->
     <label class="sheet-link" id="ed-link-line">
@@ -148,7 +150,7 @@
     </div>
     <p class="sheet-error" id="ed-error" role="alert" hidden></p>
     <div class="sheet-foot">
-      <span class="hint">Markdown · Shift+Enter saves · Enter for a new line · Esc cancels</span>
+      <span class="hint">Markdown · Click a block to edit it · Shift+Enter saves · Esc leaves a block, then cancels</span>
       <button class="act quiet" id="ed-cancel" type="button">Cancel</button>
       <button class="act go" id="ed-save" type="submit">Save</button>
     </div>
@@ -156,6 +158,7 @@
 </dialog>
 <script src="rpc.js"></script>
 <script src="markdown.js"></script>
+<script src="live-editor.js"></script>
 <script src="masonry.js"></script>
 <script src="app.js"></script>
 </body>

@@ -41,6 +41,14 @@ Drag an Entry to another column to give it that Status, or up and down to set
 its place in the column; the Meeting lists each section in that order. In a Note, Shift+Enter
 saves it.
 
+Edit an Entry or a Note and its text stays formatted, as in Notion. Click a
+block to type in it: that block alone shows its Markdown, and it is formatted
+again the moment you leave it. Enter in a list starts the next item; Enter on
+an empty item or an empty line starts a new block. Tab and Shift+Tab indent a
+list item. Up and Down at the edge of a block go to the next one. Click a
+checkbox to tick it. Ctrl+click opens a link. The first Esc leaves the block,
+and the second closes the dialog.
+
 It needs Node 24 or newer, for TypeScript with no build step and for
 `node:sqlite`. The Host's service `PATH` often has only an older Node, so `mcp`
 looks for one in this order: `WORKLOG_NODE`, `node` on `PATH`, then every Node
