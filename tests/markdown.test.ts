@@ -139,3 +139,26 @@ test('HTML in a table cell shows as text and never becomes markup', async () => 
   assert.doesNotMatch(html, /<img/);
   assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
 });
+
+test('a text cut into blocks joins back into the same text, and renders the same', async () => {
+  const code = await readFile(join(REPOSITORY, 'web', 'markdown.js'), 'utf8');
+  const context = createContext({});
+  runInContext(code, context);
+  const render = context['renderMarkdown'] as (text: string) => string;
+  const cut = context['markdownBlocks'] as (
+    text: string,
+  ) => { source: string; html: string; after: string }[];
+  const text =
+    'Tenho **x**.\nLinha 2\n\n| a | b |\n| - | - |\n| 1 | [ ] |\n\n\n## H\n- a\n  - b\n' +
+    '```\ncode\n\nmore\n```\n> q\n\ntail\n';
+
+  const blocks = cut(text);
+
+  assert.deepEqual(
+    Array.from(blocks, (block) => block.source),
+    ['Tenho **x**.\nLinha 2', '| a | b |\n| - | - |\n| 1 | [ ] |', '## H', '- a\n  - b',
+      '```\ncode\n\nmore\n```', '> q', 'tail'],
+  );
+  assert.equal(blocks.map((block) => block.source + block.after).join(''), text);
+  assert.equal(blocks.map((block) => block.html).join(''), render(text));
+});

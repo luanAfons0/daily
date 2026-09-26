@@ -544,6 +544,12 @@ function sendOnShiftEnter(body) {
 /** What is open in the editor: which kind, and the Entry or Note itself. */
 let editing = null;
 
+/** The text of the editor, each block formatted but the one typed in (live-editor.js). */
+const editBody = liveEditor(byId('ed-body'), {
+  placeholder: 'Details, in Markdown.',
+  submit: () => byId('edit-form').requestSubmit(),
+});
+
 /**
  * Open the editor dialog on an Entry or a Note. The fields are the same, a
  * title and a text; an Entry also has its Status, as chips.
@@ -554,9 +560,7 @@ function openEditor(kind, item) {
   byId('edit-hd').textContent = entry ? 'Edit Entry' : 'Edit Note';
   byId('ed-title').value = item.title;
   byId('ed-title').required = entry;
-  byId('ed-body').value = item.body || '';
-  byId('ed-body').required = !entry;
-  byId('ed-body').placeholder = entry ? 'Details, in Markdown. Optional.' : 'The Note, in Markdown.';
+  editBody.set(item.body || '', entry ? 'Details, in Markdown. Optional.' : 'The Note, in Markdown.');
   byId('ed-statuses').hidden = !entry;
   // A Link belongs to an Entry. A Note has none, so the field hides for one.
   byId('ed-link-line').hidden = !entry;
@@ -567,7 +571,7 @@ function openEditor(kind, item) {
   byId('ed-save').textContent = entry ? 'Save Entry' : 'Save Note';
   byId('ed-error').hidden = true;
   byId('edit-dialog').showModal();
-  byId('ed-body').focus();
+  editBody.focus();
 }
 
 function editEntry(entry) {
@@ -596,7 +600,7 @@ async function saveEdit(event) {
   if (!editing) return;
   const { kind, item } = editing;
   const title = byId('ed-title').value;
-  const body = byId('ed-body').value;
+  const body = editBody.get();
   const button = byId('ed-save');
   button.disabled = true;
   try {
@@ -630,7 +634,6 @@ byId('ed-close').addEventListener('click', () => byId('edit-dialog').close());
 byId('edit-dialog').addEventListener('close', () => (editing = null));
 sendOnShiftEnter(byId('ed-title'));
 sendOnShiftEnter(byId('ed-link'));
-sendOnShiftEnter(byId('ed-body'));
 
 // --- the Notes, laid out as masonry --------------------------------------
 

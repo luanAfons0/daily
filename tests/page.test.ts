@@ -180,7 +180,21 @@ test('an Entry and a Note are edited in one dialog, so the cards around them do 
   assert.match(html, /<dialog[^>]*id="edit-dialog"/);
   assert.match(html, /name="edit-status"/);
   assert.ok(!code.includes('card.replaceWith('), 'a card is still edited in place');
-  assert.match(code, /sendOnShiftEnter\(byId\('ed-body'\)\)/);
+});
+
+test('the edit dialog shows its text formatted, and only the block being typed in as Markdown', async () => {
+  const html = await readFile(join(WEB, 'index.html'), 'utf8');
+  const code = await readFile(join(WEB, 'app.js'), 'utf8');
+
+  assert.match(html, /<div[^>]*id="ed-body"/);
+  assert.ok(!/<textarea[^>]*id="ed-body"/.test(html), 'the text is still one plain textarea');
+  const at = (script: string) => html.indexOf(`<script src="${script}">`);
+  assert.ok(
+    at('markdown.js') < at('live-editor.js') && at('live-editor.js') < at('app.js'),
+    'live-editor.js is not loaded after markdown.js and before app.js',
+  );
+  assert.match(code, /liveEditor\(byId\('ed-body'\)/);
+  assert.match(code, /const body = editBody\.get\(\);/);
 });
 
 test('a double-click on a card opens its editor, so a long one needs no scroll to Edit', async () => {
