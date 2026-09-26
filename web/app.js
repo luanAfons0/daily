@@ -638,9 +638,10 @@ sendOnShiftEnter(byId('ed-body'));
 const NOTE_WIDTH = 280;
 const NOTE_GAP = 12;
 
-/** The Note cards last drawn, newest first, and the width they were laid in. */
+/** The Note cards last drawn, newest first, and the size they were laid for. */
 let noteCards = [];
 let laidWidth = 0;
+let laidScreen = 0;
 
 /**
  * Lay the Note cards out as masonry: measure each at the width of one column,
@@ -655,6 +656,7 @@ function layNotes() {
   // when the tab is shown.
   if (width === 0 || noteCards.length === 0) return;
   laidWidth = width;
+  laidScreen = innerHeight;
   const columns = Math.max(1, Math.floor((width + NOTE_GAP) / (NOTE_WIDTH + NOTE_GAP)));
   const single = (width - NOTE_GAP * (columns - 1)) / columns;
   const double = 2 * single + NOTE_GAP;
@@ -668,10 +670,12 @@ function layNotes() {
     // The Markdown renderer wraps every table in this (markdown.js).
     table: card.querySelector('.note-body .table') !== null,
   }));
-  // Only three columns or more give a Note two (masonry.js).
-  const wideable = columns >= 3 ? notes.flatMap((note, at) => (note.table ? [at] : [])) : [];
-  for (const at of wideable) noteCards[at].style.width = `${double}px`;
-  for (const at of wideable) notes[at].double = noteCards[at].offsetHeight;
+  // With three columns or more, any Note may be two wide: for a table, or for
+  // its height. masonry.js holds that rule, so every card is measured at two.
+  if (columns >= 3) {
+    for (const card of noteCards) card.style.width = `${double}px`;
+    noteCards.forEach((card, at) => (notes[at].double = card.offsetHeight));
+  }
   const placed = placeNotes(notes, columns, innerHeight, NOTE_GAP);
   placed.places.forEach((place, at) => {
     const card = noteCards[at];
@@ -682,13 +686,17 @@ function layNotes() {
   list.style.height = `${placed.height}px`;
 }
 
-// A card's height follows its width, so the Notes are laid out again when
-// the list is wider or narrower, and when the Notes tab is first shown,
-// since a hidden list measured nothing.
-new ResizeObserver(() => {
+// A card's height follows its width, and a very tall Note is two columns
+// wide, so the Notes are laid out again when the list is wider or
+// narrower, when the window is taller or shorter, and when the Notes tab is
+// first shown, since a hidden list measured nothing.
+function layNotesAgain() {
   const width = byId('notes').clientWidth;
-  if (width > 0 && width !== laidWidth) layNotes();
-}).observe(byId('notes'));
+  if (width > 0 && (width !== laidWidth || innerHeight !== laidScreen)) layNotes();
+}
+
+new ResizeObserver(layNotesAgain).observe(byId('notes'));
+addEventListener('resize', layNotesAgain);
 
 function drawNotes(notes) {
   byId('notes-count').textContent = notes.length > 0 ? String(notes.length) : '';

@@ -13,11 +13,15 @@
 
    A Note is one column wide or two, never another width, so the page keeps
    straight columns. A Note with a table is two wide, so the table shows in
-   full; but only when three or more columns fit, or it would take the whole
+   full, and so is a Note much taller than the screen, so it is about half as
+   tall; but only when three or more columns fit, or it would take the whole
    list. */
 'use strict';
 
 (function () {
+  /** How many screens tall a Note may be at one column before it is two wide. */
+  const TALL = 1.5;
+
   /** The column that ends highest, the leftmost of them on a tie. */
   function shortest(next) {
     let column = 0;
@@ -28,8 +32,8 @@
   }
 
   /** Whether a Note is two columns wide rather than one. */
-  function wide(note, columns) {
-    return columns >= 3 && note.table;
+  function wide(note, columns, screen) {
+    return columns >= 3 && (note.table || note.single > TALL * screen);
   }
 
   /**
@@ -57,7 +61,7 @@
     // Where the next Note in each column would start.
     const next = Array.from({ length: columns }, () => 0);
     const places = notes.map((note) => {
-      if (wide(note, columns)) {
+      if (wide(note, columns, screen)) {
         const column = lowestPair(next);
         const top = Math.max(next[column], next[column + 1]);
         next[column] = next[column + 1] = top + note.double + gap;

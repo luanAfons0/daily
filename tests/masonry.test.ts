@@ -217,3 +217,42 @@ test('the Notes keep their order, newest first, around a two-column Note', async
     ],
   );
 });
+
+test('a Note taller than 1.5 screens at one column is two columns wide', async () => {
+  const placeNotes = await placer();
+
+  const tall = { single: 1201, double: 600, table: false };
+
+  const placed = placeNotes([plain(100), tall], 3, SCREEN, GAP);
+
+  assert.deepEqual(placesOf(placed)[1], { column: 1, span: 2, top: 0 });
+  assert.equal(placed.height, 600);
+});
+
+test('a Note at or under 1.5 screens, with no table, stays one column wide', async () => {
+  const placeNotes = await placer();
+
+  const placed = placeNotes([{ single: 1200, double: 600, table: false }], 3, SCREEN, GAP);
+
+  assert.deepEqual(placesOf(placed), [{ column: 0, span: 1, top: 0 }]);
+  assert.equal(placed.height, 1200);
+});
+
+test('the limit follows the screen height given', async () => {
+  const placeNotes = await placer();
+
+  const tall = { single: 1000, double: 500, table: false };
+
+  assert.equal(placesOf(placeNotes([tall], 3, 600, GAP))[0]?.span, 2);
+  assert.equal(placesOf(placeNotes([tall], 3, 800, GAP))[0]?.span, 1);
+});
+
+test('with one or two columns a very tall Note is one column wide', async () => {
+  const placeNotes = await placer();
+
+  for (const columns of [1, 2]) {
+    const placed = placeNotes([{ single: 5000, double: 2500, table: false }], columns, SCREEN, GAP);
+
+    assert.deepEqual(placesOf(placed), [{ column: 0, span: 1, top: 0 }]);
+  }
+});
